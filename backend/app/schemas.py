@@ -130,6 +130,10 @@ class SchemeResponse(BaseModel):
 class ApplicationCreate(BaseModel):
     scheme_id: int
 
+class ApplicationTrackingUpdate(BaseModel):
+    tracking_id: Optional[str] = None
+    tracking_link: Optional[str] = None
+
 class ApplicationResponse(BaseModel):
     id: int
     user_id: int
@@ -154,6 +158,7 @@ class EligibilityRequest(BaseModel):
 
 class EligibilityResponse(BaseModel):
     eligible: bool
+    score: float
     reasons: List[str]
     scheme: Optional[SchemeResponse] = None
 
@@ -170,3 +175,6 @@ class RecommendationResponse(BaseModel):
     benefit: Optional[str] = None
     application_link: Optional[str] = None
     state: Optional[str] = None
+    score: float = 0.0
+    match_level: str = "Low Match"
+    reasons: List[str] = []

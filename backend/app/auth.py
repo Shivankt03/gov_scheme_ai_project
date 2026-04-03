@@ -2,13 +2,10 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from . import database, models, schemas
-from passlib.context import CryptContext
+import bcrypt
 import jwt
 from datetime import datetime, timedelta
 import os
-
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -20,11 +17,17 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(
+        plain_password.encode("utf-8"),
+        hashed_password.encode("utf-8"),
+    )
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(
+        password.encode("utf-8"),
+        bcrypt.gensalt(),
+    ).decode("utf-8")
 
 
 def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
@@ -49,7 +52,7 @@ def get_current_user(
         if email is None:
             raise credentials_exception
         token_data = schemas.TokenData(email=email)
-    except jwt.PyJWTError:
+    except Exception:
         raise credentials_exception
 
     user = db.query(models.User).filter(models.User.email == token_data.email).first()

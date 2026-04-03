@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from datetime import timedelta
 import uuid
 
@@ -167,8 +167,41 @@ def get_my_applications(
     current_user: UserModel = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Get all applications for the logged-in user."""
-    applications = db.query(ApplicationModel).filter(
-        ApplicationModel.user_id == current_user.id
-    ).all()
+    """Get all applications for the logged-in user with scheme details."""
+    applications = (
+        db.query(ApplicationModel)
+        .options(joinedload(ApplicationModel.scheme))
+        .filter(ApplicationModel.user_id == current_user.id)
+        .all()
+    )
     return applications
+
+
+@router.put("/applications/{app_id}/tracking", response_model=schemas.ApplicationResponse)
+def update_application_tracking(
+    app_id: int,
+    tracking_data: schemas.ApplicationTrackingUpdate,
+    current_user: UserModel = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update tracking ID and tracking link for an application after applying on the govt website."""
+    application = (
+        db.query(ApplicationModel)
+        .options(joinedload(ApplicationModel.scheme))
+        .filter(
+            ApplicationModel.id == app_id,
+            ApplicationModel.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    if tracking_data.tracking_id is not None:
+        application.tracking_id = tracking_data.tracking_id
+    if tracking_data.tracking_link is not None:
+        application.tracking_link = tracking_data.tracking_link
+
+    db.commit()
+    db.refresh(application)
+    return application

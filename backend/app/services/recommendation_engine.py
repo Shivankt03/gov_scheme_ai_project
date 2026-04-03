@@ -4,58 +4,137 @@ from ..models import User, Profile, Scheme
 
 
 class RecommendationEngine:
+    """AI-powered scheme recommendation engine with confidence scoring."""
+
     def __init__(self, user_profile: Dict):
         self.user_profile = user_profile
 
     def recommend_schemes(self, available_schemes: List[Dict]) -> List[Dict]:
         """
-        Recommend schemes based on the user's profile and available schemes.
-        Uses a simple matching algorithm.
+        Recommend schemes with confidence scores and explanations.
+        Returns schemes sorted by score (highest first).
         """
-        recommended_schemes = []
+        scored_schemes = []
         for scheme in available_schemes:
-            if self.is_relevant(scheme):
-                recommended_schemes.append(scheme)
-        return recommended_schemes
+            result = self.score_scheme(scheme)
+            if result['score'] > 0:
+                scheme_with_score = {**scheme, **result}
+                scored_schemes.append(scheme_with_score)
 
-    def is_relevant(self, scheme: Dict) -> bool:
+        # Sort by score descending
+        scored_schemes.sort(key=lambda x: x['score'], reverse=True)
+        return scored_schemes
+
+    def score_scheme(self, scheme: Dict) -> Dict:
         """
-        Determine if the scheme is relevant to the user's profile.
-        Checks age, income, occupation, and other attributes against the scheme's criteria.
+        Score a scheme against the user's profile.
+        Returns: {'score': float, 'reasons': list, 'match_level': str}
         """
         profile = self.user_profile
+        matched = []
+        failed = []
+        warnings = []
+        total_criteria = 0
 
-        # Check age
-        if 'min_age' in scheme and scheme['min_age']:
-            if profile.get('age', 0) < scheme['min_age']:
-                return False
+        # --- Age ---
+        if scheme.get('min_age'):
+            total_criteria += 1
+            user_age = profile.get('age', 0)
+            if user_age and user_age >= scheme['min_age']:
+                matched.append(f"✅ Age {user_age} meets minimum age {scheme['min_age']}")
+            elif user_age:
+                failed.append(f"❌ Your age ({user_age}) is below minimum ({scheme['min_age']})")
+            else:
+                warnings.append(f"⚠️ Age not provided — min age required: {scheme['min_age']}")
 
-        # Check income
-        if 'max_income' in scheme and scheme['max_income']:
-            if profile.get('income', 0) > scheme['max_income']:
-                return False
+        # --- Income ---
+        if scheme.get('max_income'):
+            total_criteria += 1
+            user_income = profile.get('income', 0)
+            if user_income is not None and user_income <= scheme['max_income']:
+                matched.append(f"✅ Income ₹{user_income:,} is within ₹{scheme['max_income']:,} limit")
+            elif user_income:
+                failed.append(f"❌ Income ₹{user_income:,} exceeds ₹{scheme['max_income']:,} limit")
+            else:
+                warnings.append(f"⚠️ Income not provided — max income: ₹{scheme['max_income']:,}")
 
-        # Check occupation
-        if 'target_occupation' in scheme and scheme['target_occupation']:
-            if profile.get('occupation', '').lower() != scheme['target_occupation'].lower():
-                return False
+        # --- Occupation ---
+        if scheme.get('target_occupation'):
+            total_criteria += 1
+            user_occ = profile.get('occupation', '')
+            if user_occ and user_occ.lower() == scheme['target_occupation'].lower():
+                matched.append(f"✅ You are a {user_occ} — this scheme targets {scheme['target_occupation']}s")
+            elif user_occ:
+                failed.append(f"❌ Scheme is for {scheme['target_occupation']}s, you are a {user_occ}")
+            else:
+                warnings.append(f"⚠️ Occupation not set — scheme targets {scheme['target_occupation']}s")
 
-        # Check category
-        if 'target_category' in scheme and scheme['target_category']:
-            if profile.get('category', '').lower() != scheme['target_category'].lower():
-                return False
+        # --- Category ---
+        if scheme.get('target_category'):
+            total_criteria += 1
+            user_cat = profile.get('category', '')
+            if user_cat and user_cat.lower() == scheme['target_category'].lower():
+                matched.append(f"✅ Category {user_cat} matches target {scheme['target_category']}")
+            elif user_cat:
+                failed.append(f"❌ Scheme targets {scheme['target_category']}, you are {user_cat}")
+            else:
+                warnings.append(f"⚠️ Category not set — scheme targets {scheme['target_category']}")
 
-        # Check state
-        if 'state' in scheme and scheme['state']:
-            if scheme['state'].lower() != 'all' and profile.get('state', '').lower() != scheme['state'].lower():
-                return False
+        # --- State ---
+        if scheme.get('state') and scheme['state'].lower() != 'all':
+            total_criteria += 1
+            user_state = profile.get('state', '')
+            if user_state and user_state.lower() == scheme['state'].lower():
+                matched.append(f"✅ Available in your state ({user_state})")
+            elif user_state:
+                failed.append(f"❌ Only in {scheme['state']}, you are in {user_state}")
+            else:
+                warnings.append(f"⚠️ State not set — scheme is for {scheme['state']}")
+        elif scheme.get('state') and scheme['state'].lower() == 'all':
+            matched.append("✅ Available in all states")
 
-        return True
+        # --- Farmer bonus ---
+        if scheme.get('target_occupation', '').lower() == 'farmer' and profile.get('is_farmer'):
+            matched.append("✅ You are a registered farmer")
+
+        # --- Disability bonus ---
+        if profile.get('disability'):
+            warnings.append("ℹ️ You may qualify for additional disability benefits")
+
+        # --- Calculate score ---
+        if total_criteria == 0:
+            score = 0.8  # No criteria = likely open to all
+            matched.append("✅ No specific restrictions — open to all eligible citizens")
+        else:
+            # Weighted: matches +1, warnings +0.3, failures -1
+            raw = len(matched) - len(failed) + len(warnings) * 0.3
+            score = max(0, min(1.0, raw / max(total_criteria, 1)))
+
+        score = round(score, 2)
+
+        # Determine match level
+        if score >= 0.8:
+            match_level = "Excellent Match"
+        elif score >= 0.6:
+            match_level = "Good Match"
+        elif score >= 0.4:
+            match_level = "Partial Match"
+        else:
+            match_level = "Low Match"
+
+        reasons = matched + warnings + failed
+
+        return {
+            'score': score,
+            'match_level': match_level,
+            'reasons': reasons,
+        }
 
 
 def get_recommendations_for_user(db: Session, user_id: int) -> List[Dict]:
     """
-    Get scheme recommendations for a user from the database.
+    Get scored scheme recommendations for a user from the database.
+    Returns schemes sorted by relevance with confidence scores and explanations.
     """
     profile = db.query(Profile).filter(Profile.user_id == user_id).first()
     if not profile:
