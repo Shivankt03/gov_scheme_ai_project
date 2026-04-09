@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import Chatbot from './components/Chatbot';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
@@ -34,6 +35,7 @@ function AppRoutes() {
   return (
     <>
       {user && <Navbar />}
+      {user && <Chatbot />}
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />

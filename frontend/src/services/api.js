@@ -98,4 +98,10 @@ export const adminAPI = {
   updateApplicationStatus: (id, status) => api.put(`/admin/applications/${id}/status?status=${status}`),
 };
 
+// Chatbot APIs
+export const chatAPI = {
+  chat: (message) => api.post('/chatbot/chat', { message }),
+  conversation: (message, history) => api.post('/chatbot/conversation', { message, history }),
+};
+
 export default api;

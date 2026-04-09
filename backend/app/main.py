@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import user_routes, scheme_routes, admin_routes
+from .routers import user_routes, scheme_routes, admin_routes, chatbot_routes
 from . import models
 from .database import engine
 import uvicorn
@@ -24,6 +24,7 @@ app.add_middleware(
 app.include_router(user_routes.router, tags=["Users & Auth"])
 app.include_router(scheme_routes.router, tags=["Schemes"])
 app.include_router(admin_routes.router, prefix="/admin", tags=["Admin"])
+app.include_router(chatbot_routes.router, prefix="/chatbot", tags=["Chatbot"])
 
 # Create tables
 try:

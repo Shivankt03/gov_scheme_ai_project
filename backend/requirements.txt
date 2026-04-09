@@ -13,3 +13,5 @@ passlib[bcrypt]
 PyJWT
 fpdf2
 joblib
+openai>=1.0.0
+python-telegram-bot>=21.0.0

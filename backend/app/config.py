@@ -18,8 +18,10 @@ class Settings:
     DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
     ALLOWED_HOSTS: list = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
-    # AI Model
+    # AI Model & Keys
     AI_MODEL_PATH: str = os.getenv("AI_MODEL_PATH", "app/ai_model/model.pkl")
-
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
 
 settings = Settings()

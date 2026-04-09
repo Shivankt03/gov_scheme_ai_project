@@ -3,9 +3,6 @@ from typing import List, Optional
 from datetime import datetime
 
 
-# ========================
-# AUTH SCHEMAS
-# ========================
 
 class Token(BaseModel):
     access_token: str
@@ -15,9 +12,7 @@ class TokenData(BaseModel):
     email: Optional[str] = None
 
 
-# ========================
-# USER SCHEMAS
-# ========================
+
 
 class UserBase(BaseModel):
     name: str
@@ -38,9 +33,6 @@ class UserResponse(UserBase):
         from_attributes = True
 
 
-# ========================
-# PROFILE SCHEMAS
-# ========================
 
 class ProfileCreate(BaseModel):
     age: Optional[int] = None
@@ -74,9 +66,6 @@ class UserWithProfile(UserBase):
         from_attributes = True
 
 
-# ========================
-# SCHEME SCHEMAS
-# ========================
 
 class SchemeBase(BaseModel):
     name: str
@@ -123,9 +112,7 @@ class SchemeResponse(BaseModel):
         from_attributes = True
 
 
-# ========================
-# APPLICATION SCHEMAS
-# ========================
+
 
 class ApplicationCreate(BaseModel):
     scheme_id: int
@@ -148,9 +135,7 @@ class ApplicationResponse(BaseModel):
         from_attributes = True
 
 
-# ========================
-# ELIGIBILITY SCHEMAS
-# ========================
+
 
 class EligibilityRequest(BaseModel):
     user_id: int
@@ -163,9 +148,7 @@ class EligibilityResponse(BaseModel):
     scheme: Optional[SchemeResponse] = None
 
 
-# ========================
-# RECOMMENDATION SCHEMAS
-# ========================
+
 
 class RecommendationResponse(BaseModel):
     id: int
