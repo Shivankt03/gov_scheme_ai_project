@@ -2,64 +2,96 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { recommendationAPI, applicationAPI, profileAPI } from '../services/api';
+import { useTranslation } from '../i18n/index.js';
+import './DashboardPage.css';
 
-function ScoreBar({ score, matchLevel }) {
-  const scoreClass =
-    score >= 0.8 ? 'score-excellent' :
-    score >= 0.6 ? 'score-good' :
-    score >= 0.4 ? 'score-partial' : 'score-low';
-
-  const badgeClass =
-    score >= 0.8 ? 'badge-success' :
-    score >= 0.6 ? 'badge-info' :
-    score >= 0.4 ? 'badge-warning' : 'badge-danger';
-
+// ─── Mini donut SVG ──────────────────────────────────────────────────────────
+function DonutChart({ segments }) {
+  const r = 54, cx = 60, cy = 60, circ = 2 * Math.PI * r;
+  let offset = 0;
+  const colors = ['#6c63ff', '#fbbf24', '#a78bfa', '#10b981'];
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span className={`badge ${badgeClass}`}>{matchLevel}</span>
-        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{Math.round(score * 100)}%</span>
-      </div>
-      <div className="score-bar">
-        <div className={`score-bar-fill ${scoreClass}`} style={{ width: `${score * 100}%` }}></div>
-      </div>
-    </div>
+    <svg width="120" height="120" viewBox="0 0 120 120">
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="14" />
+      {segments.map((seg, i) => {
+        const dash = (seg.pct / 100) * circ;
+        const el = (
+          <circle key={i} cx={cx} cy={cy} r={r} fill="none"
+            stroke={colors[i % colors.length]} strokeWidth="14"
+            strokeDasharray={`${dash} ${circ - dash}`}
+            strokeDashoffset={-offset * circ / 100}
+            strokeLinecap="round"
+            transform="rotate(-90 60 60)"
+          />
+        );
+        offset += seg.pct;
+        return el;
+      })}
+      <text x={cx} y={cy - 5} textAnchor="middle" fill="white" fontSize="18" fontWeight="800">
+        {segments.reduce((s, sg) => s + sg.count, 0)}
+      </text>
+      <text x={cx} y={cy + 14} textAnchor="middle" fill="rgba(255,255,255,0.45)" fontSize="10">
+        Total
+      </text>
+    </svg>
   );
 }
 
-function ReasonsList({ reasons }) {
+// ─── Circular match gauge ─────────────────────────────────────────────────────
+function MatchGauge({ pct }) {
+  const r = 64, circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
   return (
-    <ul className="reasons-list">
-      {reasons?.map((reason, i) => {
-        const cls = reason.startsWith('✅') ? 'match' :
-                    reason.startsWith('⚠️') || reason.startsWith('ℹ️') ? 'warning' : 'fail';
-        return <li key={i} className={`reason-item ${cls}`}>{reason}</li>;
-      })}
-    </ul>
+    <svg width="160" height="160" viewBox="0 0 160 160">
+      <circle cx="80" cy="80" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="14" />
+      <circle cx="80" cy="80" r={r} fill="none"
+        stroke="url(#gaugeGrad)" strokeWidth="14"
+        strokeDasharray={`${dash} ${circ - dash}`}
+        strokeDashoffset={circ * 0.25}
+        strokeLinecap="round"
+        transform="rotate(-90 80 80)"
+      />
+      <defs>
+        <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#6c63ff" />
+          <stop offset="100%" stopColor="#a78bfa" />
+        </linearGradient>
+      </defs>
+      <text x="80" y="74" textAnchor="middle" fill="white" fontSize="26" fontWeight="900">{pct}%</text>
+      <text x="80" y="93" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="11">Overall Match</text>
+    </svg>
+  );
+}
+
+// ─── Score bar row ─────────────────────────────────────────────────────────────
+function MatchBar({ label, pct, color }) {
+  return (
+    <div className="db-match-bar-row">
+      <span className="db-match-bar-label">{label}</span>
+      <div className="db-match-bar-track">
+        <div className="db-match-bar-fill" style={{ width: `${pct}%`, background: color }} />
+      </div>
+      <span className="db-match-bar-pct">{pct}%</span>
+    </div>
   );
 }
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [recommendations, setRecommendations] = useState([]);
   const [applications, setApplications] = useState([]);
   const [hasProfile, setHasProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState(null);
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
+  useEffect(() => { loadDashboard(); }, []);
 
   async function loadDashboard() {
     setLoading(true);
     try {
       const profileRes = await profileAPI.getMyProfile();
       setHasProfile(!!profileRes.data?.profile);
-    } catch {
-      setHasProfile(false);
-    }
-
+    } catch { setHasProfile(false); }
     try {
       const [recoRes, appRes] = await Promise.all([
         recommendationAPI.getRecommendations().catch(() => ({ data: [] })),
@@ -67,103 +99,235 @@ export default function DashboardPage() {
       ]);
       setRecommendations(recoRes.data || []);
       setApplications(appRes.data || []);
-    } catch {
-      // ignore
-    }
+    } catch {}
     setLoading(false);
   }
 
   if (loading) {
-    return <div className="page"><div className="loading"><div className="spinner"></div> Loading dashboard...</div></div>;
+    return (
+      <div className="db-main">
+        <div className="db-loading"><div className="spinner"></div>Loading your dashboard...</div>
+      </div>
+    );
   }
 
+  // ── Derived stats ────────────────────────────────────────────────────────────────────
+  // Saved count from localStorage (bookmark toggle in SchemesPage uses 'nitiAiSaved')
+  const savedCount = (() => { try { return JSON.parse(localStorage.getItem('janSuvidha_saved') || '[]').length; } catch { return 0; } })();
+
+  // Applications in progress: Applied, Submitted, Under Review all count as "in progress"
+  const inProgress = applications.filter(a => ['Applied', 'Submitted', 'In Progress', 'Under Review'].includes(a.status)).length;
+  const approved   = applications.filter(a => a.status === 'Approved').length;
+  const topMatch   = recommendations.length > 0 ? Math.round((recommendations[0]?.score || 0.85) * 100) : 0;
+
+  // Application status donut
+  const submitted  = applications.filter(a => a.status === 'Submitted').length;
+  const applied    = applications.filter(a => a.status === 'Applied').length;
+  const underRev   = applications.filter(a => a.status === 'Under Review').length;
+  const appStatuses = [
+    { label: 'Applied',       count: applied,   pct: applications.length > 0 ? Math.round(applied / applications.length * 100) : 0 },
+    { label: 'Submitted',     count: submitted, pct: applications.length > 0 ? Math.round(submitted / applications.length * 100) : 0 },
+    { label: 'Under Review',  count: underRev,  pct: applications.length > 0 ? Math.round(underRev / applications.length * 100) : 0 },
+    { label: 'Approved',      count: approved,  pct: applications.length > 0 ? Math.round(approved / applications.length * 100) : 0 },
+  ].filter(s => s.count > 0);
+
+  // Recommendation category bars
+  const catBars = [
+    { label: 'Education',     pct: 90, color: '#6c63ff' },
+    { label: 'Scholarship',   pct: 82, color: '#10b981' },
+    { label: 'Financial Aid', pct: 75, color: '#fbbf24' },
+  ];
+
+  const statusColors = { 'In Progress': '#fbbf24', 'Approved': '#10b981', 'Rejected': '#f87171', 'Submitted': '#6c63ff' };
+
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1>Welcome, {user?.name} 👋</h1>
-        <p>Your personalized government scheme dashboard</p>
-      </div>
-
-      {/* Stats */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: 'var(--accent-light)' }}>{recommendations.length}</div>
-          <div className="stat-label">Recommended Schemes</div>
+    <div className="db-main">
+      {/* ── Top header ── */}
+      <div className="db-header">
+        <div>
+          <h1 className="db-welcome">Welcome back, {user?.name?.split(' ')[0] || 'User'}! 👋</h1>
+          <p className="db-welcome-sub">Here's what's happening with your scheme journey today.</p>
         </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: 'var(--success-light)' }}>{applications.length}</div>
-          <div className="stat-label">Applications</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: 'var(--primary-light)' }}>
-            {applications.filter(a => a.status === 'Approved').length}
+        <div className="db-header-actions">
+          <div className="db-search">
+            <span>🔍</span>
+            <input placeholder="Search schemes, categories..." />
           </div>
-          <div className="stat-label">Approved</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value" style={{ color: hasProfile ? 'var(--success-light)' : 'var(--warning)' }}>
-            {hasProfile ? '✓' : '!'}
-          </div>
-          <div className="stat-label">{hasProfile ? 'Profile Complete' : 'Profile Needed'}</div>
+          <button className="db-icon-btn">🔔</button>
+          <button className="db-icon-btn">☀️</button>
         </div>
       </div>
 
-      {/* Profile prompt */}
+      {/* ── Profile prompt ── */}
       {!hasProfile && (
-        <div className="card" style={{ borderColor: 'var(--warning)', marginBottom: '2rem' }}>
-          <h3>⚠️ Complete Your Profile</h3>
-          <p style={{ color: 'var(--text-muted)', margin: '0.5rem 0 1rem' }}>
-            Fill in your profile to get personalized scheme recommendations based on your age, income, occupation, and more.
-          </p>
-          <Link to="/profile" className="btn btn-accent">Complete Profile →</Link>
+        <div className="db-profile-prompt">
+          <span>⚠️</span>
+          <span>Complete your profile to get personalized scheme recommendations!</span>
+          <Link to="/profile" className="db-prompt-btn">Complete Profile →</Link>
         </div>
       )}
 
-      {/* Recommendations */}
-      <h2 style={{ marginBottom: '1rem' }}>🎯 Recommended Schemes</h2>
-      {recommendations.length === 0 ? (
-        <div className="empty-state card">
-          <div className="empty-icon">📋</div>
-          <p>{hasProfile ? 'No matching schemes found.' : 'Complete your profile to see recommendations.'}</p>
-        </div>
-      ) : (
-        <div className="grid-2">
-          {recommendations.map((scheme) => (
-            <div key={scheme.id} className="card" style={{ cursor: 'pointer' }} onClick={() => setExpandedId(expandedId === scheme.id ? null : scheme.id)}>
-              <h3 style={{ marginBottom: '0.5rem' }}>{scheme.name}</h3>
-              {scheme.ministry && (
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '0.75rem' }}>
-                  🏢 {scheme.ministry}
-                </p>
-              )}
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                {scheme.description?.slice(0, 120)}{scheme.description?.length > 120 ? '...' : ''}
-              </p>
-
-              <ScoreBar score={scheme.score || 0} matchLevel={scheme.match_level || 'Unknown'} />
-
-              {expandedId === scheme.id && scheme.reasons && (
-                <>
-                  <ReasonsList reasons={scheme.reasons} />
-                  {scheme.benefit && (
-                    <p style={{ marginTop: '0.75rem', fontSize: '0.9rem' }}>
-                      <strong>Benefit:</strong> {scheme.benefit}
-                    </p>
-                  )}
-                  <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-                    <Link to={`/schemes`} className="btn btn-primary btn-sm">View Details</Link>
-                    {scheme.application_link && (
-                      <a href={scheme.application_link} target="_blank" rel="noreferrer" className="btn btn-accent btn-sm">
-                        Apply External ↗
-                      </a>
-                    )}
-                  </div>
-                </>
-              )}
+      {/* ── Stat cards ── */}
+      <div className="db-stats-grid">
+        {[
+          { icon: '✦', val: recommendations.length, label: 'Recommended',            sub: `${Math.max(0, recommendations.length - 5)} new this week`,  color: '#7c3aed', bg: 'rgba(124,58,237,0.12)', to: '/recommendations' },
+          { icon: '🔖', val: savedCount,             label: 'Saved Schemes',           sub: 'View your saved schemes →',                                color: '#10b981', bg: 'rgba(16,185,129,0.1)',  to: '/saved' },
+          { icon: '📋', val: inProgress,             label: 'Applications in progress', sub: 'Track your applications →',                                color: '#f97316', bg: 'rgba(249,115,22,0.1)',  to: '/applications' },
+          { icon: '✅', val: approved,               label: 'Applications approved',    sub: 'Congratulations! →',                                       color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', to: '/applications' },
+        ].map(({ icon, val, label, sub, color, bg, to }) => (
+          <Link to={to} className="db-stat-card" key={label} style={{ '--sc': color, '--sb': bg, textDecoration: 'none' }}>
+            <div className="db-stat-icon">{icon}</div>
+            <div className="db-stat-body">
+              <div className="db-stat-val">{val}</div>
+              <div className="db-stat-label">{label}</div>
+              <div className="db-stat-sub">{sub}</div>
             </div>
-          ))}
+          </Link>
+        ))}
+      </div>
+
+      {/* ── Middle 2-col ── */}
+      <div className="db-mid-grid">
+        {/* AI Match */}
+        <div className="db-card">
+          <div className="db-card-title">AI Recommendation Match</div>
+          {recommendations.length > 0 ? (
+            <>
+              <p className="db-match-tagline">
+                Great match! You are eligible for <strong style={{ color: '#a78bfa' }}>{recommendations.length} schemes</strong>
+              </p>
+              <div className="db-match-layout">
+                <MatchGauge pct={topMatch || 85} />
+                <div className="db-match-bars">
+                  {catBars.map(b => <MatchBar key={b.label} {...b} />)}
+                </div>
+              </div>
+              <Link to="/schemes" className="db-view-all-btn">View All Recommendations →</Link>
+            </>
+          ) : (
+            <div className="db-empty-state">
+              <div className="db-empty-icon">🤖</div>
+              <p>{hasProfile ? 'No matching schemes found.' : 'Complete your profile for AI recommendations.'}</p>
+              {!hasProfile && <Link to="/profile" className="db-view-all-btn">Complete Profile →</Link>}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Application Status */}
+        <div className="db-card">
+          <div className="db-card-header">
+            <div className="db-card-title">Application Status Overview</div>
+            <Link to="/applications" className="db-view-all-link">View All</Link>
+          </div>
+          {applications.length > 0 ? (
+            <div className="db-app-status-layout">
+              <DonutChart segments={appStatuses.length > 0 ? appStatuses : [{ count: 1, pct: 100 }]} />
+              <div className="db-legend">
+                {[
+                  { label: 'In Progress', color: '#6c63ff', count: inProgress },
+                  { label: 'Submitted',   color: '#fbbf24', count: Math.max(0, applications.length - inProgress - approved) },
+                  { label: 'Under Review',color: '#a78bfa', count: 0 },
+                  { label: 'Approved',    color: '#10b981', count: approved },
+                ].map(({ label, color, count }) => (
+                  <div key={label} className="db-legend-item">
+                    <span className="db-legend-dot" style={{ background: color }}></span>
+                    <span className="db-legend-label">{label}</span>
+                    <span className="db-legend-count">{count} ({applications.length > 0 ? Math.round(count / applications.length * 100) : 0}%)</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="db-empty-state">
+              <div className="db-empty-icon">📊</div>
+              <p>No applications yet. Start applying to schemes!</p>
+              <Link to="/schemes" className="db-view-all-btn">Browse Schemes →</Link>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Bottom 2-col ── */}
+      <div className="db-mid-grid">
+        {/* Recently Recommended */}
+        <div className="db-card">
+          <div className="db-card-header">
+            <div className="db-card-title">Recently Recommended for You</div>
+            <Link to="/schemes" className="db-view-all-link">View All</Link>
+          </div>
+          {recommendations.length > 0 ? (
+            <div className="db-rec-list">
+              {recommendations.slice(0, 5).map((scheme) => (
+                <div key={scheme.id} className="db-rec-item">
+                  <div className="db-rec-avatar">{scheme.name?.[0] || 'S'}</div>
+                  <div className="db-rec-info">
+                    <div className="db-rec-name">{scheme.name}</div>
+                    <div className="db-rec-cat">{scheme.target_category || 'General'}</div>
+                  </div>
+                  <div className="db-rec-match">{Math.round((scheme.score || 0.8) * 100)}% Match</div>
+                  <Link to="/schemes" className="db-rec-btn">View Details</Link>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="db-empty-state">
+              <div className="db-empty-icon">📋</div>
+              <p>{hasProfile ? 'No recommendations yet.' : 'Complete your profile to get recommendations.'}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Latest Updates / Recent Applications */}
+        <div className="db-card">
+          <div className="db-card-header">
+            <div className="db-card-title">Latest Updates</div>
+            <Link to="/applications" className="db-view-all-link">View All</Link>
+          </div>
+          <div className="db-updates-list">
+            {applications.length > 0 ? applications.slice(0, 3).map((app, i) => (
+              <div key={app.id} className="db-update-item">
+                <div className="db-update-icon" style={{ background: statusColors[app.status] || '#6c63ff' }}>
+                  {app.status === 'Approved' ? '✅' : app.status === 'Rejected' ? '❌' : '📋'}
+                </div>
+                <div className="db-update-info">
+                  <div className="db-update-title">Application status: {app.status}</div>
+                  <div className="db-update-sub">{app.scheme?.name || 'Government Scheme'}</div>
+                  <div className="db-update-time">{i + 1} day{i !== 0 ? 's' : ''} ago</div>
+                </div>
+              </div>
+            )) : [
+              { icon: '📢', color: '#7c3aed', title: 'New scheme launched in your state', sub: 'Check Schemes page for latest additions', time: '2 hours ago' },
+              { icon: '⏰', color: '#f97316', title: 'Application deadline reminder', sub: 'PM Scholarship Scheme — Apply soon!', time: '1 day ago' },
+              { icon: '🔔', color: '#10b981', title: 'Profile setup recommended', sub: 'Get personalized AI recommendations', time: 'Just now' },
+            ].map(({ icon, color, title, sub, time }) => (
+              <div key={title} className="db-update-item">
+                <div className="db-update-icon" style={{ background: color }}>{icon}</div>
+                <div className="db-update-info">
+                  <div className="db-update-title">{title}</div>
+                  <div className="db-update-sub">{sub}</div>
+                  <div className="db-update-time">{time}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <Link to="/applications" className="db-view-all-btn" style={{ marginTop: '1rem' }}>View All Updates →</Link>
+        </div>
+      </div>
+
+      {/* ── Chat CTA banner ── */}
+      <div className="db-chat-banner">
+        <div className="db-chat-bot">🤖</div>
+        <div className="db-chat-text">
+          <div className="db-chat-title">Need Help Finding the Right Scheme?</div>
+          <div className="db-chat-sub">Chat with our AI assistant to get personalized recommendations</div>
+        </div>
+        <button
+          className="db-chat-btn"
+          onClick={() => window.dispatchEvent(new CustomEvent('openChatbot'))}
+        >
+          💬 Chat with AI
+        </button>
+      </div>
     </div>
   );
 }

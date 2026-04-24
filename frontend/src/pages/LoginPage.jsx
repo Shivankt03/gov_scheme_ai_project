@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from '../i18n/index.js';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -9,6 +10,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,7 +20,7 @@ export default function LoginPage() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
+      setError(err.response?.data?.detail || t('auth.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -27,19 +29,19 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card glass-card">
-        <h1>🏛️ Welcome Back</h1>
-        <p className="subtitle">Sign in to access government schemes</p>
+        <h1>{t('auth.welcomeBack')}</h1>
+        <p className="subtitle">{t('auth.signInSubtitle')}</p>
 
         {error && <div className="alert alert-error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="email">Email Address</label>
+            <label htmlFor="email">{t('auth.emailLabel')}</label>
             <input
               id="email"
               type="email"
               className="form-control"
-              placeholder="Enter your email"
+              placeholder={t('auth.emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -47,12 +49,12 @@ export default function LoginPage() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t('auth.passwordLabel')}</label>
             <input
               id="password"
               type="password"
               className="form-control"
-              placeholder="Enter your password"
+              placeholder={t('auth.passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -60,12 +62,12 @@ export default function LoginPage() {
           </div>
 
           <button type="submit" className="btn btn-accent btn-block btn-lg" disabled={loading}>
-            {loading ? <><span className="spinner"></span> Signing in...</> : 'Sign In'}
+            {loading ? <><span className="spinner"></span> {t('auth.signingIn')}</> : t('auth.signIn')}
           </button>
         </form>
 
-        <p className="divider">Don't have an account?</p>
-        <Link to="/register" className="btn btn-outline btn-block">Create Account</Link>
+        <p className="divider">{t('auth.noAccount')}</p>
+        <Link to="/register" className="btn btn-outline btn-block">{t('auth.createAccount')}</Link>
       </div>
     </div>
   );

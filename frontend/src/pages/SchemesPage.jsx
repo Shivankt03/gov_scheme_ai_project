@@ -1,28 +1,71 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { schemeAPI, applicationAPI } from '../services/api';
+import { useTranslation } from '../i18n/index.js';
+import SchemeDetailModal from '../components/SchemeDetailModal';
 
 export default function SchemesPage() {
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
+  const [searchParams] = useSearchParams();
   const [schemes, setSchemes] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [stateFilter, setStateFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || '');
+  const [occupationFilter, setOccupationFilter] = useState(searchParams.get('occupation') || '');
+  const [schemeTypeFilter, setSchemeTypeFilter] = useState(searchParams.get('schemeType') || '');
   const [loading, setLoading] = useState(true);
   const [selectedScheme, setSelectedScheme] = useState(null);
   const [eligibility, setEligibility] = useState(null);
   const [checkingEligibility, setCheckingEligibility] = useState(false);
   const [applyMessage, setApplyMessage] = useState('');
   const [detailScheme, setDetailScheme] = useState(null);
+  const [savedIds, setSavedIds] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('janSuvidha_saved') || '[]')); } catch { return new Set(); }
+  });
+
+  function toggleSave(scheme) {
+    setSavedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(scheme.id)) { next.delete(scheme.id); }
+      else { next.add(scheme.id); }
+      localStorage.setItem('janSuvidha_saved', JSON.stringify([...next]));
+      return next;
+    });
+  }
+
+  useEffect(() => {
+    // Re-read URL params when they change
+    const q   = searchParams.get('q') || '';
+    const cat = searchParams.get('category') || '';
+    const occ = searchParams.get('occupation') || '';
+    const typ = searchParams.get('schemeType') || '';
+    setSearchQuery(q);
+    setCategoryFilter(cat);
+    setOccupationFilter(occ);
+    setSchemeTypeFilter(typ);
+  }, [searchParams]);
 
   useEffect(() => {
     loadSchemes();
-  }, []);
+  }, [i18n.language, categoryFilter, occupationFilter, schemeTypeFilter]);
 
   async function loadSchemes() {
     setLoading(true);
     try {
-      const res = await schemeAPI.list({ state: stateFilter });
-      setSchemes(res.data);
+      const res = await schemeAPI.list({
+        state: stateFilter,
+        category: categoryFilter,
+        occupation: occupationFilter,
+        language: i18n.language,
+      });
+      let data = res.data || [];
+      // Client-side filter for schemeType (if backend doesn't support it)
+      if (schemeTypeFilter) {
+        data = data.filter(s => s.scheme_type === schemeTypeFilter || (schemeTypeFilter === 'State' && s.state !== 'All'));
+      }
+      setSchemes(data);
     } catch {
       setSchemes([]);
     }
@@ -37,7 +80,7 @@ export default function SchemesPage() {
     }
     setLoading(true);
     try {
-      const res = await schemeAPI.search(searchQuery);
+      const res = await schemeAPI.search(searchQuery, i18n.language);
       setSchemes(res.data);
     } catch {
       setSchemes([]);
@@ -61,8 +104,7 @@ export default function SchemesPage() {
   async function handleApplyAndRedirect(scheme) {
     try {
       await applicationAPI.apply(scheme.id);
-      setApplyMessage(`✅ Application recorded for "${scheme.name}"! Redirecting to official website...`);
-      // Open govt website in a new tab
+      setApplyMessage(t('schemes.applicationRecorded', { name: scheme.name }));
       if (scheme.application_link) {
         setTimeout(() => {
           window.open(scheme.application_link, '_blank', 'noopener,noreferrer');
@@ -71,13 +113,12 @@ export default function SchemesPage() {
       setTimeout(() => setApplyMessage(''), 5000);
     } catch (err) {
       if (err.response?.status === 400 && err.response?.data?.detail?.includes('already applied')) {
-        // Already applied — just open the link
-        setApplyMessage(`ℹ️ You already applied. Opening official website...`);
+        setApplyMessage(t('schemes.alreadyApplied'));
         if (scheme.application_link) {
           window.open(scheme.application_link, '_blank', 'noopener,noreferrer');
         }
       } else {
-        setApplyMessage(`❌ ${err.response?.data?.detail || 'Failed to apply'}`);
+        setApplyMessage(`${t('schemes.applyFailed')}: ${err.response?.data?.detail || ''}`);
       }
       setTimeout(() => setApplyMessage(''), 4000);
     }
@@ -86,8 +127,8 @@ export default function SchemesPage() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>📋 Government Schemes</h1>
-        <p>Browse, search, and apply for government schemes</p>
+        <h1>{t('schemes.title')}</h1>
+        <p>{t('schemes.subtitle')}</p>
       </div>
 
       {/* Search & Filter */}
@@ -97,7 +138,7 @@ export default function SchemesPage() {
           <input
             type="text"
             className="form-control search-input"
-            placeholder="Search schemes by name or description..."
+            placeholder={t('schemes.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -105,14 +146,14 @@ export default function SchemesPage() {
         <input
           type="text"
           className="form-control"
-          placeholder="Filter by state"
+          placeholder={t('schemes.filterByState')}
           value={stateFilter}
           onChange={(e) => setStateFilter(e.target.value)}
           style={{ width: '180px' }}
         />
-        <button type="submit" className="btn btn-primary">Search</button>
+        <button type="submit" className="btn btn-primary">{t('schemes.search')}</button>
         <button type="button" className="btn btn-outline" onClick={() => { setSearchQuery(''); setStateFilter(''); loadSchemes(); }}>
-          Clear
+          {t('schemes.clear')}
         </button>
       </form>
 
@@ -123,11 +164,11 @@ export default function SchemesPage() {
       )}
 
       {loading ? (
-        <div className="loading"><div className="spinner"></div> Loading schemes...</div>
+        <div className="loading"><div className="spinner"></div> {t('schemes.loadingSchemes')}</div>
       ) : schemes.length === 0 ? (
         <div className="empty-state card">
           <div className="empty-icon">📭</div>
-          <p>No schemes found. Try a different search.</p>
+          <p>{t('schemes.noSchemes')}</p>
         </div>
       ) : (
         <div className="grid-2">
@@ -135,11 +176,11 @@ export default function SchemesPage() {
             <div key={scheme.id} className="scheme-card card">
               {/* Accent stripe */}
               <div className="scheme-card-accent"></div>
-              
+
               <div className="scheme-card-body">
                 <h3>{scheme.name}</h3>
                 {scheme.ministry && (
-                  <p className="scheme-ministry">🏢 {scheme.ministry}</p>
+                  <p className="scheme-ministry">{t('schemes.ministry')} {scheme.ministry}</p>
                 )}
                 <p className="scheme-description">
                   {scheme.description?.slice(0, 150)}{scheme.description?.length > 150 ? '...' : ''}
@@ -147,36 +188,44 @@ export default function SchemesPage() {
 
                 {/* Criteria tags */}
                 <div className="scheme-tags">
-                  {scheme.state && <span className="badge badge-info">📍 {scheme.state}</span>}
-                  {scheme.target_category && <span className="badge badge-info">🏷️ {scheme.target_category}</span>}
-                  {scheme.target_occupation && <span className="badge badge-info">💼 {scheme.target_occupation}</span>}
-                  {scheme.min_age && <span className="badge badge-info">🎂 {scheme.min_age}+</span>}
-                  {scheme.max_income && <span className="badge badge-info">💰 ≤₹{scheme.max_income?.toLocaleString()}</span>}
+                  {scheme.scheme_type && <span className={`badge ${scheme.scheme_type === 'Central' ? 'badge-success' : 'badge-warning'}`}>{scheme.scheme_type}</span>}
+                  {scheme.state && scheme.state !== 'All' && <span className="badge badge-info">{t('schemes.state')} {scheme.state}</span>}
+                  {scheme.target_category && <span className="badge badge-info">{t('schemes.category')} {scheme.target_category}</span>}
+                  {scheme.target_occupation && <span className="badge badge-info">{t('schemes.occupation')} {scheme.target_occupation}</span>}
+                  {scheme.min_age && <span className="badge badge-info">{t('schemes.minAge')} {scheme.min_age}+</span>}
+                  {scheme.max_income && <span className="badge badge-info">{t('schemes.maxIncome')} ≤₹{scheme.max_income?.toLocaleString()}</span>}
                 </div>
 
                 {scheme.benefit && (
-                  <p className="scheme-benefit">✨ {scheme.benefit}</p>
+                  <p className="scheme-benefit">{t('schemes.benefit')} {scheme.benefit}</p>
                 )}
 
                 {/* Actions */}
                 <div className="scheme-actions">
                   <button className="btn btn-outline btn-sm" onClick={() => { setSelectedScheme(scheme); checkEligibility(scheme.id); }}>
-                    Check Eligibility
+                    {t('schemes.checkEligibility')}
                   </button>
                   {user && (
                     <button className="btn btn-accent btn-sm" onClick={() => handleApplyAndRedirect(scheme)}>
-                      🚀 Apply & Visit Website
+                      {t('schemes.applyVisit')}
                     </button>
                   )}
                   <button className="btn btn-ghost btn-sm" onClick={() => setDetailScheme(scheme)}>
-                    View Details
+                    {t('schemes.viewDetails')}
+                  </button>
+                  <button
+                    className={`btn btn-sm ${savedIds.has(scheme.id) ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => toggleSave(scheme)}
+                    title={savedIds.has(scheme.id) ? 'Remove from saved' : 'Save scheme'}
+                  >
+                    {savedIds.has(scheme.id) ? '🔖 Saved' : '🔖 Save'}
                   </button>
                 </div>
 
                 {/* Official website link */}
                 {scheme.application_link && (
                   <a href={scheme.application_link} target="_blank" rel="noreferrer" className="scheme-external-link">
-                    🌐 Visit Official Website ↗
+                    {t('schemes.visitOfficial')}
                   </a>
                 )}
 
@@ -185,10 +234,10 @@ export default function SchemesPage() {
                   <div className="eligibility-result">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                       <span className={`badge ${eligibility.eligible ? 'badge-success' : 'badge-danger'}`}>
-                        {eligibility.eligible ? '✅ Eligible' : '❌ Not Eligible'}
+                        {eligibility.eligible ? t('schemes.eligible') : t('schemes.notEligible')}
                       </span>
                       <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                        Score: {Math.round((eligibility.score || 0) * 100)}%
+                        {t('schemes.score')}: {Math.round((eligibility.score || 0) * 100)}%
                       </span>
                     </div>
                     <ul className="reasons-list">
@@ -200,7 +249,7 @@ export default function SchemesPage() {
                   </div>
                 )}
                 {selectedScheme?.id === scheme.id && checkingEligibility && (
-                  <div className="loading" style={{ padding: '1rem' }}><div className="spinner"></div> Checking...</div>
+                  <div className="loading" style={{ padding: '1rem' }}><div className="spinner"></div> {t('schemes.checking')}</div>
                 )}
               </div>
             </div>
@@ -208,72 +257,11 @@ export default function SchemesPage() {
         </div>
       )}
 
-      {/* Scheme Detail Modal */}
-      {detailScheme && (
-        <div className="modal-overlay" onClick={() => setDetailScheme(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setDetailScheme(null)}>✕</button>
-            <div className="modal-header-accent"></div>
-            <h2>{detailScheme.name}</h2>
-            {detailScheme.ministry && (
-              <p className="scheme-ministry" style={{ marginBottom: '1rem' }}>🏢 {detailScheme.ministry}</p>
-            )}
-            <p style={{ color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: '1.5rem' }}>
-              {detailScheme.description}
-            </p>
-
-            <div className="modal-info-grid">
-              {detailScheme.state && (
-                <div className="modal-info-item">
-                  <span className="modal-info-label">📍 State</span>
-                  <span className="modal-info-value">{detailScheme.state}</span>
-                </div>
-              )}
-              {detailScheme.target_category && (
-                <div className="modal-info-item">
-                  <span className="modal-info-label">🏷️ Category</span>
-                  <span className="modal-info-value">{detailScheme.target_category}</span>
-                </div>
-              )}
-              {detailScheme.target_occupation && (
-                <div className="modal-info-item">
-                  <span className="modal-info-label">💼 Occupation</span>
-                  <span className="modal-info-value">{detailScheme.target_occupation}</span>
-                </div>
-              )}
-              {detailScheme.min_age && (
-                <div className="modal-info-item">
-                  <span className="modal-info-label">🎂 Min Age</span>
-                  <span className="modal-info-value">{detailScheme.min_age}+</span>
-                </div>
-              )}
-              {detailScheme.max_income && (
-                <div className="modal-info-item">
-                  <span className="modal-info-label">💰 Max Income</span>
-                  <span className="modal-info-value">₹{detailScheme.max_income?.toLocaleString()}</span>
-                </div>
-              )}
-              {detailScheme.benefit && (
-                <div className="modal-info-item" style={{ gridColumn: '1 / -1' }}>
-                  <span className="modal-info-label">✨ Benefit</span>
-                  <span className="modal-info-value">{detailScheme.benefit}</span>
-                </div>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
-              {detailScheme.application_link && (
-                <a href={detailScheme.application_link} target="_blank" rel="noreferrer" className="btn btn-accent">
-                  🌐 Visit Official Website ↗
-                </a>
-              )}
-              <button className="btn btn-primary" onClick={() => { handleApplyAndRedirect(detailScheme); setDetailScheme(null); }}>
-                🚀 Apply Now
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── Premium Scheme Detail Modal ── */}
+      <SchemeDetailModal
+        scheme={detailScheme}
+        onClose={() => setDetailScheme(null)}
+      />
     </div>
   );
 }

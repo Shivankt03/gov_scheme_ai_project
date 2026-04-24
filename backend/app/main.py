@@ -26,12 +26,18 @@ app.include_router(scheme_routes.router, tags=["Schemes"])
 app.include_router(admin_routes.router, prefix="/admin", tags=["Admin"])
 app.include_router(chatbot_routes.router, prefix="/chatbot", tags=["Chatbot"])
 
-# Create tables
+# Create tables + auto-migrate new columns
 try:
     models.Base.metadata.create_all(bind=engine)
     print("✅ Database tables created/verified successfully")
 except Exception as e:
     print(f"⚠️  Could not create DB tables: {e}")
+
+try:
+    models.auto_migrate_columns()
+    print("✅ Column migrations checked")
+except Exception as e:
+    print(f"⚠️  Column migration warning: {e}")
 
 
 @app.get("/", tags=["Health"])

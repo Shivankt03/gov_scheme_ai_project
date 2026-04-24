@@ -5,12 +5,12 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('schemes');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
-  
+
   // Data states
   const [schemes, setSchemes] = useState([]);
   const [users, setUsers] = useState([]);
   const [applications, setApplications] = useState([]);
-  
+
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState(null); // 'scheme', 'user'
@@ -18,9 +18,9 @@ export default function AdminPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form states
-  const initialSchemeForm = { name: '', ministry: '', description: '', min_age: '', max_income: '', target_occupation: '', target_category: '', state: '', benefit: '', application_link: '' };
+  const initialSchemeForm = { name: '', ministry: '', description: '', min_age: '', max_income: '', target_occupation: '', target_category: '', state: '', benefit: '', application_link: '', application_deadline: '', documents_required: '', scheme_type: '' };
   const initialUserForm = { name: '', email: '', password: '', role: 'user' };
-  
+
   const [schemeForm, setSchemeForm] = useState({ ...initialSchemeForm });
   const [userForm, setUserForm] = useState({ ...initialUserForm });
 
@@ -64,7 +64,8 @@ export default function AdminPage() {
       setSchemeForm({
         name: scheme.name || '', ministry: scheme.ministry || '', description: scheme.description || '',
         min_age: scheme.min_age || '', max_income: scheme.max_income || '', target_occupation: scheme.target_occupation || '',
-        target_category: scheme.target_category || '', state: scheme.state || '', benefit: scheme.benefit || '', application_link: scheme.application_link || ''
+        target_category: scheme.target_category || '', state: scheme.state || '', benefit: scheme.benefit || '', application_link: scheme.application_link || '',
+        application_deadline: scheme.application_deadline ? scheme.application_deadline.split('T')[0] : '', documents_required: scheme.documents_required || '', scheme_type: scheme.scheme_type || ''
       });
     } else {
       setSchemeForm({ ...initialSchemeForm });
@@ -89,6 +90,7 @@ export default function AdminPage() {
     const payload = { ...schemeForm };
     if (payload.min_age === '') payload.min_age = null; else payload.min_age = parseInt(payload.min_age, 10);
     if (payload.max_income === '') payload.max_income = null; else payload.max_income = parseInt(payload.max_income, 10);
+    if (payload.application_deadline === '') payload.application_deadline = null;
 
     try {
       if (editingItem) await adminAPI.updateScheme(editingItem.id, payload);
@@ -132,7 +134,7 @@ export default function AdminPage() {
     setIsSubmitting(true);
     const payload = { ...userForm };
     if (editingItem && !payload.password) delete payload.password; // Don't send empty password if not changing
-    
+
     try {
       if (editingItem) await adminAPI.updateUser(editingItem.id, payload);
       else await adminAPI.createUser(payload);
@@ -198,7 +200,7 @@ export default function AdminPage() {
 
       <div className="card" style={{ padding: '0', overflowX: 'auto' }}>
         {renderTabs()}
-        
+
         {loading ? (
           <div className="loading" style={{ padding: '3rem' }}><div className="spinner"></div> Loading {activeTab}...</div>
         ) : (
@@ -288,12 +290,12 @@ export default function AdminPage() {
                   <td style={{ padding: '1rem' }}>User #{app.user_id}</td>
                   <td style={{ padding: '1rem', fontWeight: '500' }}>Scheme #{app.scheme_id} {app.scheme ? `(${app.scheme.name})` : ''}</td>
                   <td style={{ padding: '1rem' }}>
-                    <span style={{ fontSize: '0.85rem' }}>ID: {app.tracking_id || '-'}</span><br/>
+                    <span style={{ fontSize: '0.85rem' }}>ID: {app.tracking_id || '-'}</span><br />
                     <span style={{ fontSize: '0.85rem' }}>Link: {app.tracking_link ? <a href={app.tracking_link} target="_blank" rel="noreferrer">Open ↗</a> : '-'}</span>
                   </td>
                   <td style={{ padding: '1rem' }}>
-                    <select 
-                      className="form-control" 
+                    <select
+                      className="form-control"
                       style={{ padding: '0.25rem 0.5rem', width: 'auto', fontSize: '0.85rem' }}
                       value={app.status}
                       onChange={(e) => updateApplicationStatus(app.id, e.target.value)}
@@ -323,21 +325,30 @@ export default function AdminPage() {
             <h2 style={{ marginBottom: '1.5rem' }}>
               {editingItem ? 'Edit' : 'Add New'} {modalType === 'scheme' ? 'Scheme' : 'User'}
             </h2>
-            
+
             {/* SCHEME FORM */}
             {modalType === 'scheme' && (
               <form onSubmit={handleSchemeSubmit}>
                 <div className="grid-2" style={{ gap: '1rem' }}>
-                  <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Scheme Name *</label><input type="text" className="form-control" required value={schemeForm.name} onChange={e => setSchemeForm({...schemeForm, name: e.target.value})} /></div>
-                  <div className="form-group"><label>Ministry</label><input type="text" className="form-control" value={schemeForm.ministry} onChange={e => setSchemeForm({...schemeForm, ministry: e.target.value})} /></div>
-                  <div className="form-group"><label>Application Link</label><input type="url" className="form-control" value={schemeForm.application_link} onChange={e => setSchemeForm({...schemeForm, application_link: e.target.value})} /></div>
-                  <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Description *</label><textarea className="form-control" rows="3" required value={schemeForm.description} onChange={e => setSchemeForm({...schemeForm, description: e.target.value})}></textarea></div>
-                  <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Key Benefits</label><textarea className="form-control" rows="2" value={schemeForm.benefit} onChange={e => setSchemeForm({...schemeForm, benefit: e.target.value})}></textarea></div>
-                  <div className="form-group"><label>State</label><input type="text" className="form-control" value={schemeForm.state} onChange={e => setSchemeForm({...schemeForm, state: e.target.value})} /></div>
-                  <div className="form-group"><label>Target Category</label><input type="text" className="form-control" value={schemeForm.target_category} onChange={e => setSchemeForm({...schemeForm, target_category: e.target.value})} /></div>
-                  <div className="form-group"><label>Target Occupation</label><input type="text" className="form-control" value={schemeForm.target_occupation} onChange={e => setSchemeForm({...schemeForm, target_occupation: e.target.value})} /></div>
-                  <div className="form-group"><label>Min Age</label><input type="number" className="form-control" value={schemeForm.min_age} onChange={e => setSchemeForm({...schemeForm, min_age: e.target.value})} /></div>
-                  <div className="form-group"><label>Max Income</label><input type="number" className="form-control" value={schemeForm.max_income} onChange={e => setSchemeForm({...schemeForm, max_income: e.target.value})} /></div>
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Scheme Name *</label><input type="text" className="form-control" required value={schemeForm.name} onChange={e => setSchemeForm({ ...schemeForm, name: e.target.value })} /></div>
+                  <div className="form-group"><label>Ministry</label><input type="text" className="form-control" value={schemeForm.ministry} onChange={e => setSchemeForm({ ...schemeForm, ministry: e.target.value })} /></div>
+                  <div className="form-group"><label>Application Link</label><input type="url" className="form-control" value={schemeForm.application_link} onChange={e => setSchemeForm({ ...schemeForm, application_link: e.target.value })} /></div>
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Description *</label><textarea className="form-control" rows="3" required value={schemeForm.description} onChange={e => setSchemeForm({ ...schemeForm, description: e.target.value })}></textarea></div>
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Key Benefits</label><textarea className="form-control" rows="2" value={schemeForm.benefit} onChange={e => setSchemeForm({ ...schemeForm, benefit: e.target.value })}></textarea></div>
+                  <div className="form-group"><label>State</label><input type="text" className="form-control" value={schemeForm.state} onChange={e => setSchemeForm({ ...schemeForm, state: e.target.value })} /></div>
+                  <div className="form-group"><label>Target Category</label><input type="text" className="form-control" value={schemeForm.target_category} onChange={e => setSchemeForm({ ...schemeForm, target_category: e.target.value })} /></div>
+                  <div className="form-group"><label>Target Occupation</label><input type="text" className="form-control" value={schemeForm.target_occupation} onChange={e => setSchemeForm({ ...schemeForm, target_occupation: e.target.value })} /></div>
+                  <div className="form-group"><label>Min Age</label><input type="number" className="form-control" value={schemeForm.min_age} onChange={e => setSchemeForm({ ...schemeForm, min_age: e.target.value })} /></div>
+                  <div className="form-group"><label>Max Income</label><input type="number" className="form-control" value={schemeForm.max_income} onChange={e => setSchemeForm({ ...schemeForm, max_income: e.target.value })} /></div>
+                  <div className="form-group"><label>Scheme Type</label>
+                    <select className="form-control" value={schemeForm.scheme_type} onChange={e => setSchemeForm({ ...schemeForm, scheme_type: e.target.value })}>
+                      <option value="">Select type</option>
+                      <option value="Central">Central</option>
+                      <option value="State">State</option>
+                    </select>
+                  </div>
+                  <div className="form-group"><label>Application Deadline</label><input type="date" className="form-control" value={schemeForm.application_deadline} onChange={e => setSchemeForm({ ...schemeForm, application_deadline: e.target.value })} /></div>
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Documents Required</label><textarea className="form-control" rows="2" value={schemeForm.documents_required} onChange={e => setSchemeForm({ ...schemeForm, documents_required: e.target.value })} placeholder="E.g. Aadhar Card, Income Certificate..."></textarea></div>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', justifyContent: 'flex-end' }}>
                   <button type="button" className="btn btn-outline" onClick={() => setIsModalOpen(false)}>Cancel</button>
@@ -349,11 +360,11 @@ export default function AdminPage() {
             {/* USER FORM */}
             {modalType === 'user' && (
               <form onSubmit={handleUserSubmit}>
-                <div className="form-group"><label>Full Name *</label><input type="text" className="form-control" required value={userForm.name} onChange={e => setUserForm({...userForm, name: e.target.value})} /></div>
-                <div className="form-group"><label>Email Address *</label><input type="email" className="form-control" required value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} /></div>
-                <div className="form-group"><label>Password {editingItem ? '(Leave blank to keep current)' : '*'}</label><input type="password" className="form-control" required={!editingItem} value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} minLength="6" /></div>
+                <div className="form-group"><label>Full Name *</label><input type="text" className="form-control" required value={userForm.name} onChange={e => setUserForm({ ...userForm, name: e.target.value })} /></div>
+                <div className="form-group"><label>Email Address *</label><input type="email" className="form-control" required value={userForm.email} onChange={e => setUserForm({ ...userForm, email: e.target.value })} /></div>
+                <div className="form-group"><label>Password {editingItem ? '(Leave blank to keep current)' : '*'}</label><input type="password" className="form-control" required={!editingItem} value={userForm.password} onChange={e => setUserForm({ ...userForm, password: e.target.value })} minLength="6" /></div>
                 <div className="form-group"><label>User Role</label>
-                  <select className="form-control" value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})}>
+                  <select className="form-control" value={userForm.role} onChange={e => setUserForm({ ...userForm, role: e.target.value })}>
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
                   </select>

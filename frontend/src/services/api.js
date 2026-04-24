@@ -16,11 +16,13 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 errors globally
+// Handle 401 errors globally — skip redirect for auth & startup token-check
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const url = error.config?.url || '';
+    const skipRedirect = url.includes('/login') || url.includes('/register') || url === '/me';
+    if (error.response?.status === 401 && !skipRedirect) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
@@ -28,6 +30,12 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+
+// Helper: get the current UI language from localStorage
+function getCurrentLanguage() {
+  return localStorage.getItem('janSuvidhaLanguage') || 'en';
+}
 
 // Auth APIs
 export const authAPI = {
@@ -50,16 +58,24 @@ export const profileAPI = {
   updateProfile: (data) => api.put('/profile/me', data),
 };
 
-// Scheme APIs
+// Scheme APIs — now includes language param so backend can translate descriptions
 export const schemeAPI = {
   list: (filters = {}) => {
     const params = new URLSearchParams();
     if (filters.state) params.append('state', filters.state);
     if (filters.category) params.append('category', filters.category);
     if (filters.occupation) params.append('occupation', filters.occupation);
+    // Pass language so backend translates descriptions if needed
+    const lang = filters.language || getCurrentLanguage();
+    if (lang && lang !== 'en') params.append('language', lang);
     return api.get(`/schemes/?${params.toString()}`);
   },
-  search: (query) => api.get(`/schemes/search?q=${query}`),
+  search: (query, language) => {
+    const params = new URLSearchParams({ q: query });
+    const lang = language || getCurrentLanguage();
+    if (lang && lang !== 'en') params.append('language', lang);
+    return api.get(`/schemes/search?${params.toString()}`);
+  },
   get: (id) => api.get(`/schemes/${id}`),
   checkEligibility: (schemeId, userId) => api.get(`/schemes/${schemeId}/eligibility/${userId}`),
 };
@@ -86,7 +102,7 @@ export const adminAPI = {
   createScheme: (data) => api.post('/admin/schemes/', data),
   updateScheme: (id, data) => api.put(`/admin/schemes/${id}`, data),
   deleteScheme: (id) => api.delete(`/admin/schemes/${id}`),
-  
+
   // User Management
   getUsers: () => api.get('/admin/users/'),
   createUser: (data) => api.post('/admin/users/', data),
@@ -98,10 +114,17 @@ export const adminAPI = {
   updateApplicationStatus: (id, status) => api.put(`/admin/applications/${id}/status?status=${status}`),
 };
 
-// Chatbot APIs
+// Chatbot APIs — passes language so the AI responds in the user's selected language
 export const chatAPI = {
-  chat: (message) => api.post('/chatbot/chat', { message }),
-  conversation: (message, history) => api.post('/chatbot/conversation', { message, history }),
+  chat: (message, language) => api.post('/chatbot/chat', {
+    message,
+    language: language || getCurrentLanguage(),
+  }),
+  conversation: (message, history, language) => api.post('/chatbot/conversation', {
+    message,
+    history,
+    language: language || getCurrentLanguage(),
+  }),
 };
 
 export default api;

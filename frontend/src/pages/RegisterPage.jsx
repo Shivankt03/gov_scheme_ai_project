@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from '../i18n/index.js';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -11,17 +12,18 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.passwordMismatch'));
       return;
     }
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(t('auth.passwordTooShort'));
       return;
     }
 
@@ -30,7 +32,7 @@ export default function RegisterPage() {
       await register(name, email, password);
       navigate('/profile');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Registration failed. Please try again.');
+      setError(err.response?.data?.detail || t('auth.registerFailed'));
     } finally {
       setLoading(false);
     }
@@ -39,19 +41,19 @@ export default function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card glass-card">
-        <h1>🏛️ Join GovScheme AI</h1>
-        <p className="subtitle">Create your account to discover government schemes</p>
+        <h1>{t('auth.joinTitle')}</h1>
+        <p className="subtitle">{t('auth.registerSubtitle')}</p>
 
         {error && <div className="alert alert-error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="name">Full Name</label>
+            <label htmlFor="name">{t('auth.fullNameLabel')}</label>
             <input
               id="name"
               type="text"
               className="form-control"
-              placeholder="Enter your full name"
+              placeholder={t('auth.fullNamePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -59,12 +61,12 @@ export default function RegisterPage() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">Email Address</label>
+            <label htmlFor="email">{t('auth.emailLabel')}</label>
             <input
               id="email"
               type="email"
               className="form-control"
-              placeholder="Enter your email"
+              placeholder={t('auth.emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -72,7 +74,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t('auth.passwordLabel')}</label>
             <input
               id="password"
               type="password"
@@ -85,12 +87,12 @@ export default function RegisterPage() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+            <label htmlFor="confirmPassword">{t('auth.confirmPasswordLabel')}</label>
             <input
               id="confirmPassword"
               type="password"
               className="form-control"
-              placeholder="Confirm your password"
+              placeholder={t('auth.confirmPasswordPlaceholder')}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
@@ -98,12 +100,12 @@ export default function RegisterPage() {
           </div>
 
           <button type="submit" className="btn btn-accent btn-block btn-lg" disabled={loading}>
-            {loading ? <><span className="spinner"></span> Creating Account...</> : 'Create Account'}
+            {loading ? <><span className="spinner"></span> {t('auth.creating')}</> : t('auth.createAccount')}
           </button>
         </form>
 
-        <p className="divider">Already have an account?</p>
-        <Link to="/login" className="btn btn-outline btn-block">Sign In</Link>
+        <p className="divider">{t('auth.alreadyHaveAccount')}</p>
+        <Link to="/login" className="btn btn-outline btn-block">{t('auth.signInLink')}</Link>
       </div>
     </div>
   );

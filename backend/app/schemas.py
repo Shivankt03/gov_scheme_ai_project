@@ -45,6 +45,10 @@ class ProfileCreate(BaseModel):
     is_farmer: Optional[bool] = False
     land_size: Optional[float] = None
     disability: Optional[bool] = False
+    # Optional extended profile fields
+    marital_status: Optional[str] = None
+    is_bpl: Optional[bool] = None
+    domicile_certificate: Optional[bool] = None
 
 class ProfileUpdate(ProfileCreate):
     """Same fields as ProfileCreate, all optional for partial updates."""
@@ -82,6 +86,10 @@ class SchemeCreate(BaseModel):
     state: Optional[str] = None
     benefit: Optional[str] = None
     application_link: Optional[str] = None
+    application_deadline: Optional[datetime] = None
+    documents_required: Optional[str] = None
+    how_to_apply: Optional[str] = None
+    scheme_type: Optional[str] = None
 
 class SchemeUpdate(BaseModel):
     name: Optional[str] = None
@@ -94,6 +102,10 @@ class SchemeUpdate(BaseModel):
     state: Optional[str] = None
     benefit: Optional[str] = None
     application_link: Optional[str] = None
+    application_deadline: Optional[datetime] = None
+    documents_required: Optional[str] = None
+    how_to_apply: Optional[str] = None
+    scheme_type: Optional[str] = None
 
 class SchemeResponse(BaseModel):
     id: int
@@ -107,6 +119,10 @@ class SchemeResponse(BaseModel):
     state: Optional[str] = None
     benefit: Optional[str] = None
     application_link: Optional[str] = None
+    application_deadline: Optional[datetime] = None
+    documents_required: Optional[str] = None
+    how_to_apply: Optional[str] = None
+    scheme_type: Optional[str] = None
 
     class Config:
         from_attributes = True
