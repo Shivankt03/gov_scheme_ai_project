@@ -41,13 +41,11 @@ export default function Navbar() {
 
         {/* Brand Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-niti-primary to-niti-light flex items-center justify-center shadow-[0_0_15px_rgba(124,58,237,0.5)] group-hover:shadow-[0_0_25px_rgba(124,58,237,0.7)] transition-all duration-300">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
+          <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center shadow-[0_0_15px_rgba(124,58,237,0.5)] group-hover:shadow-[0_0_25px_rgba(124,58,237,0.7)] transition-all duration-300 overflow-hidden text-center">
+            <img src="/ChatGPT%20Image%20Apr%2026,%202026,%2008_13_47%20PM.png" alt="Logo" className="w-full h-full object-contain scale-110" />
           </div>
           <span className="text-xl font-extrabold tracking-wide text-white">
-            Jan Suvidha
+            JanSuvidha
           </span>
         </Link>
 
@@ -104,11 +102,10 @@ export default function Navbar() {
                       key={lang.code}
                       id={`lang-${lang.code}`}
                       onClick={() => changeLanguage(lang.code)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 ${
-                        i18n.language === lang.code
-                          ? 'bg-niti-primary/20 text-niti-light font-semibold'
-                          : 'text-[#7B8DB0] hover:text-white hover:bg-white/5'
-                      }`}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 ${i18n.language === lang.code
+                        ? 'bg-niti-primary/20 text-niti-light font-semibold'
+                        : 'text-[#7B8DB0] hover:text-white hover:bg-white/5'
+                        }`}
                     >
                       <span className="text-base">{lang.flag}</span>
                       <span className="font-medium">{lang.nativeLabel}</span>

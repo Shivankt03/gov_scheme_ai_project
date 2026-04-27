@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -65,9 +65,12 @@ function P({ children }) {
 
 function AppRoutes() {
   const { user } = useAuth();
+  const location = useLocation();
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+
   return (
     <>
-      {!user && <Navbar />}
+      {!user && !isAuthPage && <Navbar />}
       {user && <Chatbot />}
 
       <Routes>

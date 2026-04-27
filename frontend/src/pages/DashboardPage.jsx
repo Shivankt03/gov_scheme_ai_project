@@ -118,7 +118,8 @@ export default function DashboardPage() {
   // Applications in progress: Applied, Submitted, Under Review all count as "in progress"
   const inProgress = applications.filter(a => ['Applied', 'Submitted', 'In Progress', 'Under Review'].includes(a.status)).length;
   const approved   = applications.filter(a => a.status === 'Approved').length;
-  const topMatch   = recommendations.length > 0 ? Math.round((recommendations[0]?.score || 0.85) * 100) : 0;
+  const highMatchRecs = recommendations.filter(r => (r.score || 0) >= 0.6);
+  const topMatch   = highMatchRecs.length > 0 ? Math.round((highMatchRecs[0]?.score || 0) * 100) : 0;
 
   // Application status donut
   const submitted  = applications.filter(a => a.status === 'Submitted').length;
@@ -131,12 +132,26 @@ export default function DashboardPage() {
     { label: 'Approved',      count: approved,  pct: applications.length > 0 ? Math.round(approved / applications.length * 100) : 0 },
   ].filter(s => s.count > 0);
 
-  // Recommendation category bars
-  const catBars = [
-    { label: 'Education',     pct: 90, color: '#6c63ff' },
-    { label: 'Scholarship',   pct: 82, color: '#10b981' },
-    { label: 'Financial Aid', pct: 75, color: '#fbbf24' },
-  ];
+  // Dynamically calculate top 3 categories based on user's highest scheme matches (from high matches)
+  const categoryScores = {};
+  highMatchRecs.forEach(r => {
+    const cat = r.target_category || 'General';
+    const score = Math.round((r.score || 0) * 100);
+    if (!categoryScores[cat] || score > categoryScores[cat]) {
+       categoryScores[cat] = score;
+    }
+  });
+  
+  const catBars = Object.keys(categoryScores).length > 0 
+    ? Object.entries(categoryScores)
+        .sort((a,b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([label, pct], i) => ({ label, pct, color: ['#6c63ff', '#10b981', '#fbbf24', '#ec4899'][i % 4] }))
+    : [
+        { label: 'Education',     pct: 0, color: '#6c63ff' },
+        { label: 'Scholarship',   pct: 0, color: '#10b981' },
+      ];
+
 
   const statusColors = { 'In Progress': '#fbbf24', 'Approved': '#10b981', 'Rejected': '#f87171', 'Submitted': '#6c63ff' };
 
@@ -170,7 +185,7 @@ export default function DashboardPage() {
       {/* ── Stat cards ── */}
       <div className="db-stats-grid">
         {[
-          { icon: '✦', val: recommendations.length, label: 'Recommended',            sub: `${Math.max(0, recommendations.length - 5)} new this week`,  color: '#7c3aed', bg: 'rgba(124,58,237,0.12)', to: '/recommendations' },
+          { icon: '✦', val: highMatchRecs.length, label: 'Recommended',            sub: `Top matches (>60%)`,  color: '#7c3aed', bg: 'rgba(124,58,237,0.12)', to: '/recommendations' },
           { icon: '🔖', val: savedCount,             label: 'Saved Schemes',           sub: 'View your saved schemes →',                                color: '#10b981', bg: 'rgba(16,185,129,0.1)',  to: '/saved' },
           { icon: '📋', val: inProgress,             label: 'Applications in progress', sub: 'Track your applications →',                                color: '#f97316', bg: 'rgba(249,115,22,0.1)',  to: '/applications' },
           { icon: '✅', val: approved,               label: 'Applications approved',    sub: 'Congratulations! →',                                       color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', to: '/applications' },
@@ -191,10 +206,10 @@ export default function DashboardPage() {
         {/* AI Match */}
         <div className="db-card">
           <div className="db-card-title">AI Recommendation Match</div>
-          {recommendations.length > 0 ? (
+          {highMatchRecs.length > 0 ? (
             <>
               <p className="db-match-tagline">
-                Great match! You are eligible for <strong style={{ color: '#a78bfa' }}>{recommendations.length} schemes</strong>
+                Great match! You are highly eligible for <strong style={{ color: '#a78bfa' }}>{highMatchRecs.length} schemes</strong>
               </p>
               <div className="db-match-layout">
                 <MatchGauge pct={topMatch || 85} />
@@ -202,7 +217,7 @@ export default function DashboardPage() {
                   {catBars.map(b => <MatchBar key={b.label} {...b} />)}
                 </div>
               </div>
-              <Link to="/schemes" className="db-view-all-btn">View All Recommendations →</Link>
+              <Link to="/recommendations" className="db-view-all-btn">View All Recommendations →</Link>
             </>
           ) : (
             <div className="db-empty-state">
@@ -253,11 +268,11 @@ export default function DashboardPage() {
         <div className="db-card">
           <div className="db-card-header">
             <div className="db-card-title">Recently Recommended for You</div>
-            <Link to="/schemes" className="db-view-all-link">View All</Link>
+            <Link to="/recommendations" className="db-view-all-link">View All</Link>
           </div>
-          {recommendations.length > 0 ? (
+          {highMatchRecs.length > 0 ? (
             <div className="db-rec-list">
-              {recommendations.slice(0, 5).map((scheme) => (
+              {highMatchRecs.slice(0, 5).map((scheme) => (
                 <div key={scheme.id} className="db-rec-item">
                   <div className="db-rec-avatar">{scheme.name?.[0] || 'S'}</div>
                   <div className="db-rec-info">
@@ -265,7 +280,7 @@ export default function DashboardPage() {
                     <div className="db-rec-cat">{scheme.target_category || 'General'}</div>
                   </div>
                   <div className="db-rec-match">{Math.round((scheme.score || 0.8) * 100)}% Match</div>
-                  <Link to="/schemes" className="db-rec-btn">View Details</Link>
+                  <Link to={`/recommendations`} className="db-rec-btn">View Details</Link>
                 </div>
               ))}
             </div>

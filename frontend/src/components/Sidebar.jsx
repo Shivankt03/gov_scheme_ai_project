@@ -8,34 +8,34 @@ const NAV_SECTIONS = [
   {
     title: 'MAIN',
     items: [
-      { to: '/dashboard',     icon: '🏠', label: 'Dashboard' },
+      { to: '/dashboard', icon: '🏠', label: 'Dashboard' },
     ],
   },
   {
     title: 'DISCOVER',
     items: [
-      { to: '/schemes',           icon: '🔍', label: 'Find Schemes' },
-      { to: '/recommendations',   icon: '🤖', label: 'AI Recommendation' },
-      { to: '/categories',        icon: '🏷️', label: 'Categories' },
+      { to: '/schemes', icon: '🔍', label: 'Find Schemes' },
+      { to: '/recommendations', icon: '🤖', label: 'AI Recommendation' },
+      { to: '/categories', icon: '🏷️', label: 'Categories' },
       { to: '/schemes?schemeType=State', icon: '📍', label: 'State Schemes' },
     ],
   },
   {
     title: 'MY SPACE',
     items: [
-      { to: '/profile',       icon: '👤', label: 'My Profile' },
-      { to: '/saved',         icon: '🔖', label: 'Saved Schemes' },
-      { to: '/applications',  icon: '📂', label: 'My Applications' },
-      { to: '/activity',      icon: '🕐', label: 'Activity History' },
+      { to: '/profile', icon: '👤', label: 'My Profile' },
+      { to: '/saved', icon: '🔖', label: 'Saved Schemes' },
+      { to: '/applications', icon: '📂', label: 'My Applications' },
+      { to: '/activity', icon: '🕐', label: 'Activity History' },
     ],
   },
   {
     title: 'RESOURCES',
     items: [
-      { to: '/docs',          icon: '📖', label: 'Documentation' },
-      { to: '/news',          icon: '📰', label: 'News & Updates' },
-      { to: '/help',          icon: '💬', label: 'Help & Support' },
-      { to: '/feedback',      icon: '📝', label: 'Feedback' },
+      { to: '/docs', icon: '📖', label: 'Documentation' },
+      { to: '/news', icon: '📰', label: 'News & Updates' },
+      { to: '/help', icon: '💬', label: 'Help & Support' },
+      { to: '/feedback', icon: '📝', label: 'Feedback' },
     ],
   },
 ];
@@ -64,7 +64,9 @@ export default function Sidebar() {
     <aside className="sidebar">
       {/* ── Logo ── */}
       <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">🏛️</div>
+        <div className="sidebar-logo-icon" style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)' }}>
+          <img src="/ChatGPT%20Image%20Apr%2026,%202026,%2008_13_47%20PM.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.1)' }} />
+        </div>
         <div>
           <div className="sidebar-logo-name">Jan Suvidha</div>
           <div className="sidebar-logo-tagline">Empowering Your Future</div>
@@ -109,11 +111,6 @@ export default function Sidebar() {
 
       {/* ── Fixed bottom: upgrade + user ── */}
       <div className="sidebar-bottom">
-        <div className="sidebar-upgrade">
-          <div className="sidebar-upgrade-title">✨ Get AI Premium</div>
-          <div className="sidebar-upgrade-desc">Unlock advanced features and personalized AI support</div>
-          <button className="sidebar-upgrade-btn">⭐ Upgrade Now</button>
-        </div>
 
         <div className="sidebar-user">
           <div className="sidebar-user-avatar">{user?.name?.[0]?.toUpperCase() || 'U'}</div>
