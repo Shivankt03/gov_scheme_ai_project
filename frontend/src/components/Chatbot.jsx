@@ -6,6 +6,7 @@ import './Chatbot.css';
 export default function Chatbot() {
   const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
   const [messages, setMessages] = useState([
     { role: 'assistant', content: t('chatbot.greeting') }
   ]);
@@ -17,11 +18,26 @@ export default function Chatbot() {
     setMessages([{ role: 'assistant', content: t('chatbot.greeting') }]);
   }, [i18n.language]);
 
-  // Allow external components (e.g. dashboard banner) to open the chatbot
+  // Expose a global method to open the chatbot from anywhere
   useEffect(() => {
-    const handler = () => setIsOpen(true);
-    window.addEventListener('openChatbot', handler);
-    return () => window.removeEventListener('openChatbot', handler);
+    const handleOpen = () => {
+      setShowOverlay(true);
+      setTimeout(() => {
+        setShowOverlay(false);
+        setIsOpen(true);
+      }, 3500);
+    };
+
+    window.openChatbot = handleOpen;
+    
+    // Fallback event listeners just in case
+    window.addEventListener('openChatbot', handleOpen);
+    document.addEventListener('openChatbot', handleOpen);
+    return () => {
+      delete window.openChatbot;
+      window.removeEventListener('openChatbot', handleOpen);
+      document.removeEventListener('openChatbot', handleOpen);
+    };
   }, []);
 
   useEffect(() => {
@@ -52,7 +68,9 @@ export default function Chatbot() {
         {/* Header */}
         <div className="chatbot-header">
           <div className="chatbot-header-left">
-            <div className="chatbot-avatar">🤖</div>
+            <div className="chatbot-avatar">
+              <img src="/chatbot.png" alt="AI" style={{ width: '24px', height: '24px' }} />
+            </div>
             <div>
               <div className="chatbot-title">{t('chatbot.title')}</div>
               <div className="chatbot-online">
@@ -107,11 +125,24 @@ export default function Chatbot() {
       {/* ── FAB toggle button ── */}
       <button
         className={`chatbot-fab ${isOpen ? 'chatbot-fab--open' : ''}`}
-        onClick={() => setIsOpen(o => !o)}
+        onClick={() => {
+          if (isOpen) setIsOpen(false);
+          else if (window.openChatbot) window.openChatbot();
+        }}
         aria-label="Toggle AI Chat"
       >
-        {isOpen ? '✕' : '💬'}
+        {isOpen ? '✕' : <img src="/chatbot.png" alt="Chat with AI" style={{ width: '32px', height: '32px' }} />}
       </button>
+
+      {/* ── Fullscreen Greeting Overlay ── */}
+      <div className={`chatbot-fullscreen-overlay ${showOverlay ? 'chatbot-fullscreen-overlay--visible' : ''}`}>
+        <div className="chatbot-fullscreen-content">
+          <img src="/chatbot.png" alt="AI Assistant" className="chatbot-fullscreen-img" />
+          <div className="chatbot-fullscreen-text">
+            {t('chatbot.fullscreenGreeting')}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

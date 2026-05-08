@@ -2,40 +2,45 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/index.js';
 import { LANGUAGES } from '../i18n/index.js';
+import {
+  HomeIcon, SearchIcon, SparklesIcon, TagIcon, MapPinIcon,
+  UserIcon, BookmarkIcon, FolderIcon, ClockIcon, BookOpenIcon,
+  NewspaperIcon, MessageSquareIcon, FileTextIcon, GlobeIcon
+} from './Icons';
 import './Sidebar.css';
 
 const NAV_SECTIONS = [
   {
     title: 'MAIN',
     items: [
-      { to: '/dashboard', icon: '🏠', label: 'Dashboard' },
+      { to: '/dashboard', icon: HomeIcon, label: 'Dashboard' },
     ],
   },
   {
     title: 'DISCOVER',
     items: [
-      { to: '/schemes', icon: '🔍', label: 'Find Schemes' },
-      { to: '/recommendations', icon: '🤖', label: 'AI Recommendation' },
-      { to: '/categories', icon: '🏷️', label: 'Categories' },
-      { to: '/schemes?schemeType=State', icon: '📍', label: 'State Schemes' },
+      { to: '/schemes', icon: SearchIcon, label: 'Find Schemes' },
+      { to: '/recommendations', icon: SparklesIcon, label: 'AI Recommendation' },
+      { to: '/categories', icon: TagIcon, label: 'Categories' },
+      { to: '/schemes?schemeType=State', icon: MapPinIcon, label: 'State Schemes' },
     ],
   },
   {
     title: 'MY SPACE',
     items: [
-      { to: '/profile', icon: '👤', label: 'My Profile' },
-      { to: '/saved', icon: '🔖', label: 'Saved Schemes' },
-      { to: '/applications', icon: '📂', label: 'My Applications' },
-      { to: '/activity', icon: '🕐', label: 'Activity History' },
+      { to: '/profile', icon: UserIcon, label: 'My Profile' },
+      { to: '/saved', icon: BookmarkIcon, label: 'Saved Schemes' },
+      { to: '/applications', icon: FolderIcon, label: 'My Applications' },
+      { to: '/activity', icon: ClockIcon, label: 'Activity History' },
     ],
   },
   {
     title: 'RESOURCES',
     items: [
-      { to: '/docs', icon: '📖', label: 'Documentation' },
-      { to: '/news', icon: '📰', label: 'News & Updates' },
-      { to: '/help', icon: '💬', label: 'Help & Support' },
-      { to: '/feedback', icon: '📝', label: 'Feedback' },
+      { to: '/docs', icon: BookOpenIcon, label: 'Documentation' },
+      { to: '/news', icon: NewspaperIcon, label: 'News & Updates' },
+      { to: '/help', icon: MessageSquareIcon, label: 'Help & Support' },
+      { to: '/feedback', icon: FileTextIcon, label: 'Feedback' },
     ],
   },
 ];
@@ -75,14 +80,14 @@ export default function Sidebar() {
 
       {/* ── Language (top, always visible) ── */}
       <div className="sidebar-lang-top">
-        <span className="sidebar-lang-globe">🌐</span>
+        <span className="sidebar-lang-globe"><GlobeIcon size={16} /></span>
         <select
           className="sidebar-lang-select"
           value={i18n.language}
           onChange={e => i18n.changeLanguage(e.target.value)}
         >
           {LANGUAGES.map(l => (
-            <option key={l.code} value={l.code}>{l.flag} {l.nativeLabel}</option>
+            <option key={l.code} value={l.code}>{l.nativeLabel}</option>
           ))}
         </select>
       </div>
@@ -93,13 +98,13 @@ export default function Sidebar() {
           {NAV_SECTIONS.map(({ title, items }) => (
             <div key={title} className="sidebar-section">
               <div className="sidebar-section-label">{title}</div>
-              {items.map(({ to, icon, label }) => (
+              {items.map(({ to, icon: Icon, label }) => (
                 <NavLink
                   key={label + to}
                   to={to}
                   className={() => `sidebar-link${isActive(to) ? ' active' : ''}`}
                 >
-                  <span className="sidebar-link-icon">{icon}</span>
+                  <span className="sidebar-link-icon"><Icon size={18} /></span>
                   <span>{label}</span>
                 </NavLink>
               ))}

@@ -48,6 +48,8 @@ def analyze_schemes_openrouter(user_profile: str, schemes_data: str, language: s
     You are an empathetic, expert consultant for government schemes and citizen problem-solving.
     A user has come to you with their profile or a specific problem (e.g., crop destruction, starting a business, financial trouble).
 
+    CRITICAL INSTRUCTION: Your SOLE purpose is to assist users with government schemes, citizen services, agricultural problems, business startups, financial trouble, and related government initiatives. You MUST STRICTLY REFUSE to answer any question or prompt that is not related to government schemes, citizen services, or public welfare initiatives. If the user asks about coding, general knowledge, math, pop culture, or anything else unrelated, politely decline and state that you are only programmed to assist with government schemes and citizen services.
+
     Current User Input/Problem:
     {user_profile}
 
@@ -89,8 +91,9 @@ def fast_chat_groq(message: str, history: list = None, language: str = 'en') -> 
     lang_name = get_language_name(language)
 
     system_prompt = (
-        f"You are a fast, helpful government scheme assistant. Answer general queries briefly. "
-        f"You MUST always respond in {lang_name} only. Do not use any other language."
+        f"You are a fast, helpful government scheme assistant. Your SOLE purpose is to assist users with government schemes and citizen services. "
+        f"CRITICAL RULE: You MUST strictly refuse to answer any questions or prompts that are not related to government schemes, agriculture, citizen problem-solving, or public welfare. If asked about unrelated topics, politely decline and state your purpose. "
+        f"Answer general queries briefly. You MUST always respond in {lang_name} only. Do not use any other language."
     )
 
     messages = [{"role": "system", "content": system_prompt}]
@@ -124,10 +127,9 @@ def translate_schemes_batch(schemes_text: str, language: str) -> str:
 
     lang_name = get_language_name(language)
 
-    prompt = f"""Translate the following scheme descriptions from English to {lang_name}.
-Keep scheme names, ministry names, and proper nouns in English (do not translate them).
-Only translate description and benefit text.
-Return only the translated text - preserve the exact same format and structure.
+    prompt = f"""Translate the following scheme data from English to {lang_name}.
+You MUST translate the NAME, DESCRIPTION, BENEFIT, and HOW_TO_APPLY text accurately to {lang_name}.
+Return only the translated text - preserve the exact same format and structure like [0] NAME: ..., [0] DESCRIPTION: ...
 
 Text to translate:
 {schemes_text}"""

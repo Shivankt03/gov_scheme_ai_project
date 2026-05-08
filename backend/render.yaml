@@ -1,0 +1,48 @@
+services:
+  # ─────────────────────────────────────────────
+  # 1. FastAPI Web Service (Main Backend API)
+  # ─────────────────────────────────────────────
+  - type: web
+    name: jan-suvidha-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # Set manually in Render dashboard (your Neon URL)
+      - key: OPENROUTER_API_KEY
+        sync: false          # Set manually in Render dashboard
+      - key: GROQ_API_KEY
+        sync: false          # Set manually in Render dashboard
+      - key: SECRET_KEY
+        generateValue: true  # Render auto-generates a secure random value
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false          # Set manually in Render dashboard
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+
+  # ─────────────────────────────────────────────
+  # 2. Telegram Bot (Background Worker)
+  # ─────────────────────────────────────────────
+  - type: worker
+    name: jan-suvidha-telegram-bot
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python telegram_bot.py
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # Same Neon URL as above
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false          # Copy the same value from the web service
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.11.0"

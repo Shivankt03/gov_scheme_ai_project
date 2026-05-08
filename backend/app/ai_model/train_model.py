@@ -45,7 +45,7 @@ def load_model(file_path):
 
 
 if __name__ == "__main__":
-    data = load_data('path/to/your/dataset.csv')  # Specify your dataset path
+    data = load_data('path/to/your/dataset.csv') 
     X, y = preprocess_data(data)
     model = train_model(X, y)
-    save_model(model, 'model.pkl')  # Save the trained model
+    save_model(model, 'model.pkl')  

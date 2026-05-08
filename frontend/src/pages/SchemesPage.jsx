@@ -5,6 +5,14 @@ import { schemeAPI, applicationAPI } from '../services/api';
 import { useTranslation } from '../i18n/index.js';
 import SchemeDetailModal from '../components/SchemeDetailModal';
 
+const STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
+  'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
+  'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
+  'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi',
+];
+
 export default function SchemesPage() {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
@@ -16,6 +24,7 @@ export default function SchemesPage() {
   const [occupationFilter, setOccupationFilter] = useState(searchParams.get('occupation') || '');
   const [schemeTypeFilter, setSchemeTypeFilter] = useState(searchParams.get('schemeType') || '');
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedScheme, setSelectedScheme] = useState(null);
   const [eligibility, setEligibility] = useState(null);
   const [checkingEligibility, setCheckingEligibility] = useState(false);
@@ -37,7 +46,7 @@ export default function SchemesPage() {
 
   useEffect(() => {
     // Re-read URL params when they change
-    const q   = searchParams.get('q') || '';
+    const q = searchParams.get('q') || '';
     const cat = searchParams.get('category') || '';
     const occ = searchParams.get('occupation') || '';
     const typ = searchParams.get('schemeType') || '';
@@ -47,46 +56,52 @@ export default function SchemesPage() {
     setSchemeTypeFilter(typ);
   }, [searchParams]);
 
-  useEffect(() => {
-    loadSchemes();
-  }, [i18n.language, categoryFilter, occupationFilter, schemeTypeFilter]);
-
-  async function loadSchemes() {
+  const fetchSchemes = async (query, state) => {
     setLoading(true);
     try {
-      const res = await schemeAPI.list({
-        state: stateFilter,
-        category: categoryFilter,
-        occupation: occupationFilter,
-        language: i18n.language,
-      });
-      let data = res.data || [];
-      // Client-side filter for schemeType (if backend doesn't support it)
+      let data = [];
+      if (query.trim()) {
+        const res = await schemeAPI.search(query, i18n.language);
+        data = res.data || [];
+        if (state) {
+          data = data.filter(s => s.state?.toLowerCase() === state.toLowerCase() || s.state === 'All');
+        }
+      } else {
+        const res = await schemeAPI.list({
+          state: state,
+          category: categoryFilter,
+          occupation: occupationFilter,
+          language: i18n.language,
+        });
+        data = res.data || [];
+      }
+      
       if (schemeTypeFilter) {
         data = data.filter(s => s.scheme_type === schemeTypeFilter || (schemeTypeFilter === 'State' && s.state !== 'All'));
       }
       setSchemes(data);
+      setCurrentPage(1);
     } catch {
       setSchemes([]);
+      setCurrentPage(1);
     }
     setLoading(false);
-  }
+  };
 
-  async function handleSearch(e) {
-    e.preventDefault();
-    if (!searchQuery.trim()) {
-      loadSchemes();
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await schemeAPI.search(searchQuery, i18n.language);
-      setSchemes(res.data);
-    } catch {
-      setSchemes([]);
-    }
-    setLoading(false);
-  }
+  useEffect(() => {
+    fetchSchemes(searchQuery, stateFilter);
+  }, [i18n.language, categoryFilter, occupationFilter, schemeTypeFilter]);
+
+  const handleSearch = (e) => {
+    if (e) e.preventDefault();
+    fetchSchemes(searchQuery, stateFilter);
+  };
+
+  const handleClear = () => {
+    setSearchQuery('');
+    setStateFilter('');
+    fetchSchemes('', '');
+  };
 
   async function checkEligibility(schemeId) {
     if (!user) return;
@@ -124,6 +139,11 @@ export default function SchemesPage() {
     }
   }
 
+  const indexOfLastScheme = currentPage * 12;
+  const indexOfFirstScheme = indexOfLastScheme - 12;
+  const currentSchemes = schemes.slice(indexOfFirstScheme, indexOfLastScheme);
+  const totalPages = Math.ceil(schemes.length / 12);
+
   return (
     <div className="page">
       <div className="page-header">
@@ -143,16 +163,17 @@ export default function SchemesPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <input
-          type="text"
+        <select
           className="form-control"
-          placeholder={t('schemes.filterByState')}
           value={stateFilter}
           onChange={(e) => setStateFilter(e.target.value)}
           style={{ width: '180px' }}
-        />
+        >
+          <option value="">{t('schemes.filterByState') || 'Filter by state'}</option>
+          {STATES.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
         <button type="submit" className="btn btn-primary">{t('schemes.search')}</button>
-        <button type="button" className="btn btn-outline" onClick={() => { setSearchQuery(''); setStateFilter(''); loadSchemes(); }}>
+        <button type="button" className="btn btn-outline" onClick={handleClear}>
           {t('schemes.clear')}
         </button>
       </form>
@@ -171,10 +192,11 @@ export default function SchemesPage() {
           <p>{t('schemes.noSchemes')}</p>
         </div>
       ) : (
-        <div className="grid-2">
-          {schemes.map((scheme) => (
-            <div key={scheme.id} className="scheme-card card">
-              {/* Accent stripe */}
+        <>
+          <div className="grid-2">
+            {currentSchemes.map((scheme) => (
+              <div key={scheme.id} className="scheme-card card">
+                {/* Accent stripe */}
               <div className="scheme-card-accent"></div>
 
               <div className="scheme-card-body">
@@ -254,7 +276,29 @@ export default function SchemesPage() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+          {totalPages > 1 && (
+            <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '2rem' }}>
+              <button 
+                className="btn btn-outline" 
+                onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
+                disabled={currentPage === 1}
+              >
+                ← Previous
+              </button>
+              <span style={{ alignSelf: 'center', color: 'var(--text-muted)' }}>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button 
+                className="btn btn-outline" 
+                onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
+                disabled={currentPage === totalPages}
+              >
+                Next →
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* ── Premium Scheme Detail Modal ── */}

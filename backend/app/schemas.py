@@ -3,6 +3,9 @@ from typing import List, Optional
 from datetime import datetime
 
 
+# ========================
+# AUTH SCHEMAS
+# ========================
 
 class Token(BaseModel):
     access_token: str
@@ -12,7 +15,9 @@ class TokenData(BaseModel):
     email: Optional[str] = None
 
 
-
+# ========================
+# USER SCHEMAS
+# ========================
 
 class UserBase(BaseModel):
     name: str
@@ -33,6 +38,9 @@ class UserResponse(UserBase):
         from_attributes = True
 
 
+# ========================
+# PROFILE SCHEMAS
+# ========================
 
 class ProfileCreate(BaseModel):
     age: Optional[int] = None
@@ -45,10 +53,6 @@ class ProfileCreate(BaseModel):
     is_farmer: Optional[bool] = False
     land_size: Optional[float] = None
     disability: Optional[bool] = False
-    # Optional extended profile fields
-    marital_status: Optional[str] = None
-    is_bpl: Optional[bool] = None
-    domicile_certificate: Optional[bool] = None
 
 class ProfileUpdate(ProfileCreate):
     """Same fields as ProfileCreate, all optional for partial updates."""
@@ -70,6 +74,9 @@ class UserWithProfile(UserBase):
         from_attributes = True
 
 
+# ========================
+# SCHEME SCHEMAS
+# ========================
 
 class SchemeBase(BaseModel):
     name: str
@@ -86,10 +93,6 @@ class SchemeCreate(BaseModel):
     state: Optional[str] = None
     benefit: Optional[str] = None
     application_link: Optional[str] = None
-    application_deadline: Optional[datetime] = None
-    documents_required: Optional[str] = None
-    how_to_apply: Optional[str] = None
-    scheme_type: Optional[str] = None
 
 class SchemeUpdate(BaseModel):
     name: Optional[str] = None
@@ -102,10 +105,6 @@ class SchemeUpdate(BaseModel):
     state: Optional[str] = None
     benefit: Optional[str] = None
     application_link: Optional[str] = None
-    application_deadline: Optional[datetime] = None
-    documents_required: Optional[str] = None
-    how_to_apply: Optional[str] = None
-    scheme_type: Optional[str] = None
 
 class SchemeResponse(BaseModel):
     id: int
@@ -119,23 +118,17 @@ class SchemeResponse(BaseModel):
     state: Optional[str] = None
     benefit: Optional[str] = None
     application_link: Optional[str] = None
-    application_deadline: Optional[datetime] = None
-    documents_required: Optional[str] = None
-    how_to_apply: Optional[str] = None
-    scheme_type: Optional[str] = None
 
     class Config:
         from_attributes = True
 
 
-
+# ========================
+# APPLICATION SCHEMAS
+# ========================
 
 class ApplicationCreate(BaseModel):
     scheme_id: int
-
-class ApplicationTrackingUpdate(BaseModel):
-    tracking_id: Optional[str] = None
-    tracking_link: Optional[str] = None
 
 class ApplicationResponse(BaseModel):
     id: int
@@ -151,7 +144,9 @@ class ApplicationResponse(BaseModel):
         from_attributes = True
 
 
-
+# ========================
+# ELIGIBILITY SCHEMAS
+# ========================
 
 class EligibilityRequest(BaseModel):
     user_id: int
@@ -164,7 +159,9 @@ class EligibilityResponse(BaseModel):
     scheme: Optional[SchemeResponse] = None
 
 
-
+# ========================
+# RECOMMENDATION SCHEMAS
+# ========================
 
 class RecommendationResponse(BaseModel):
     id: int

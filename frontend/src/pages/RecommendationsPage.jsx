@@ -77,7 +77,7 @@ export default function RecommendationsPage() {
                       {s.match_level || 'Match'}
                     </span>
 
-                    <Link to="/schemes" className="rec-full-btn" onClick={e => e.stopPropagation()}>
+                    <Link to={`/schemes?q=${encodeURIComponent(s.name)}`} className="rec-full-btn" onClick={e => e.stopPropagation()}>
                       View Details
                     </Link>
 
@@ -130,8 +130,8 @@ export default function RecommendationsPage() {
                       {s.match_level || 'Info Required'}
                     </span>
 
-                    <Link to="/schemes" className="rec-full-btn" onClick={e => e.stopPropagation()}>
-                       View Details
+                    <Link to={`/schemes?q=${encodeURIComponent(s.name)}`} className="rec-full-btn" onClick={e => e.stopPropagation()}>
+                      View Details
                     </Link>
 
                     {selected === s.id && (

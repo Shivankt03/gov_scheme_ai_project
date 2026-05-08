@@ -35,7 +35,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle incoming messages and route them to OpenRouter or Groq."""
+    """Handle incoming messages and route them """
     message_text = update.message.text
     
   
@@ -43,7 +43,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     needs_recommendation = any(kw in message_text.lower() for kw in keywords)
     
     if needs_recommendation:
-        await update.message.reply_text("Analyzing your profile to find the best schemes... (using OpenRouter)")
+        await update.message.reply_text("Analyzing your profile to find the best schemes...")
         
         # Fetch schemes from the database
         db = SessionLocal()

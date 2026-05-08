@@ -58,7 +58,7 @@ function MatchGauge({ pct }) {
         </linearGradient>
       </defs>
       <text x="80" y="74" textAnchor="middle" fill="white" fontSize="26" fontWeight="900">{pct}%</text>
-      <text x="80" y="93" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="11">Overall Match</text>
+      <text x="80" y="93" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="11">Match</text>
     </svg>
   );
 }
@@ -78,13 +78,13 @@ function MatchBar({ label, pct, color }) {
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [recommendations, setRecommendations] = useState([]);
   const [applications, setApplications] = useState([]);
   const [hasProfile, setHasProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { loadDashboard(); }, []);
+  useEffect(() => { loadDashboard(); }, [i18n.language]);
 
   async function loadDashboard() {
     setLoading(true);
@@ -94,8 +94,8 @@ export default function DashboardPage() {
     } catch { setHasProfile(false); }
     try {
       const [recoRes, appRes] = await Promise.all([
-        recommendationAPI.getRecommendations().catch(() => ({ data: [] })),
-        applicationAPI.getMyApplications().catch(() => ({ data: [] })),
+        recommendationAPI.getRecommendations(i18n.language).catch(() => ({ data: [] })),
+        applicationAPI.getMyApplications(i18n.language).catch(() => ({ data: [] })),
       ]);
       setRecommendations(recoRes.data || []);
       setApplications(appRes.data || []);
@@ -106,7 +106,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="db-main">
-        <div className="db-loading"><div className="spinner"></div>Loading your dashboard...</div>
+        <div className="db-loading"><div className="spinner"></div>{t('dashboard.loading')}</div>
       </div>
     );
   }
@@ -126,10 +126,10 @@ export default function DashboardPage() {
   const applied    = applications.filter(a => a.status === 'Applied').length;
   const underRev   = applications.filter(a => a.status === 'Under Review').length;
   const appStatuses = [
-    { label: 'Applied',       count: applied,   pct: applications.length > 0 ? Math.round(applied / applications.length * 100) : 0 },
-    { label: 'Submitted',     count: submitted, pct: applications.length > 0 ? Math.round(submitted / applications.length * 100) : 0 },
-    { label: 'Under Review',  count: underRev,  pct: applications.length > 0 ? Math.round(underRev / applications.length * 100) : 0 },
-    { label: 'Approved',      count: approved,  pct: applications.length > 0 ? Math.round(approved / applications.length * 100) : 0 },
+    { label: t('dashboard.applied') || 'Applied', count: applied, pct: applications.length > 0 ? Math.round(applied / applications.length * 100) : 0 },
+    { label: t('dashboard.submitted'), count: submitted, pct: applications.length > 0 ? Math.round(submitted / applications.length * 100) : 0 },
+    { label: t('dashboard.underReview'), count: underRev, pct: applications.length > 0 ? Math.round(underRev / applications.length * 100) : 0 },
+    { label: t('dashboard.approved'), count: approved, pct: applications.length > 0 ? Math.round(approved / applications.length * 100) : 0 },
   ].filter(s => s.count > 0);
 
   // Dynamically calculate top 3 categories based on user's highest scheme matches (from high matches)
@@ -160,16 +160,16 @@ export default function DashboardPage() {
       {/* ── Top header ── */}
       <div className="db-header">
         <div>
-          <h1 className="db-welcome">Welcome back, {user?.name?.split(' ')[0] || 'User'}! 👋</h1>
-          <p className="db-welcome-sub">Here's what's happening with your scheme journey today.</p>
+          <h1 className="db-welcome">{t('dashboard.welcomeTitle', { name: user?.name?.split(' ')[0] || 'User' })}</h1>
+          <p className="db-welcome-sub">{t('dashboard.welcomeSubtitle')}</p>
         </div>
-        <div className="db-header-actions">
-          <div className="db-search">
+        <div className>
+          <div className>
             <span>🔍</span>
-            <input placeholder="Search schemes, categories..." />
+            {/* <input placeholder="Search schemes, categories..." /> */}
           </div>
-          <button className="db-icon-btn">🔔</button>
-          <button className="db-icon-btn">☀️</button>
+          {/* <button className="db-icon-btn">🔔</button>
+          <button className="db-icon-btn">☀️</button> */}
         </div>
       </div>
 
@@ -177,18 +177,18 @@ export default function DashboardPage() {
       {!hasProfile && (
         <div className="db-profile-prompt">
           <span>⚠️</span>
-          <span>Complete your profile to get personalized scheme recommendations!</span>
-          <Link to="/profile" className="db-prompt-btn">Complete Profile →</Link>
+          <span>{t('dashboard.completeProfileDesc')}</span>
+          <Link to="/profile" className="db-prompt-btn">{t('dashboard.completeProfileBtn')}</Link>
         </div>
       )}
 
       {/* ── Stat cards ── */}
       <div className="db-stats-grid">
         {[
-          { icon: '✦', val: highMatchRecs.length, label: 'Recommended',            sub: `Top matches (>60%)`,  color: '#7c3aed', bg: 'rgba(124,58,237,0.12)', to: '/recommendations' },
-          { icon: '🔖', val: savedCount,             label: 'Saved Schemes',           sub: 'View your saved schemes →',                                color: '#10b981', bg: 'rgba(16,185,129,0.1)',  to: '/saved' },
-          { icon: '📋', val: inProgress,             label: 'Applications in progress', sub: 'Track your applications →',                                color: '#f97316', bg: 'rgba(249,115,22,0.1)',  to: '/applications' },
-          { icon: '✅', val: approved,               label: 'Applications approved',    sub: 'Congratulations! →',                                       color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', to: '/applications' },
+          { icon: '✦', val: highMatchRecs.length, label: t('dashboard.recommendedSchemes'), sub: `>60% ${t('dashboard.matchScore')}`, color: '#7c3aed', bg: 'rgba(124,58,237,0.12)', to: '/recommendations' },
+          { icon: '🔖', val: savedCount, label: t('dashboard.savedSchemes'), sub: t('dashboard.viewSaved'), color: '#10b981', bg: 'rgba(16,185,129,0.1)', to: '/saved' },
+          { icon: '📋', val: inProgress, label: t('dashboard.appsInProgress'), sub: t('dashboard.trackApps'), color: '#f97316', bg: 'rgba(249,115,22,0.1)', to: '/applications' },
+          { icon: '✅', val: approved, label: t('dashboard.appsApproved'), sub: t('dashboard.congrats'), color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', to: '/applications' },
         ].map(({ icon, val, label, sub, color, bg, to }) => (
           <Link to={to} className="db-stat-card" key={label} style={{ '--sc': color, '--sb': bg, textDecoration: 'none' }}>
             <div className="db-stat-icon">{icon}</div>
@@ -205,11 +205,11 @@ export default function DashboardPage() {
       <div className="db-mid-grid">
         {/* AI Match */}
         <div className="db-card">
-          <div className="db-card-title">AI Recommendation Match</div>
+          <div className="db-card-title">{t('dashboard.aiMatch')}</div>
           {highMatchRecs.length > 0 ? (
             <>
               <p className="db-match-tagline">
-                Great match! You are highly eligible for <strong style={{ color: '#a78bfa' }}>{highMatchRecs.length} schemes</strong>
+                {t('dashboard.greatMatch')} <strong style={{ color: '#a78bfa' }}>{highMatchRecs.length} {t('dashboard.schemesCount')}</strong>
               </p>
               <div className="db-match-layout">
                 <MatchGauge pct={topMatch || 85} />
@@ -217,13 +217,13 @@ export default function DashboardPage() {
                   {catBars.map(b => <MatchBar key={b.label} {...b} />)}
                 </div>
               </div>
-              <Link to="/recommendations" className="db-view-all-btn">View All Recommendations →</Link>
+              <Link to="/recommendations" className="db-view-all-btn">{t('dashboard.viewAllRecs')}</Link>
             </>
           ) : (
             <div className="db-empty-state">
               <div className="db-empty-icon">🤖</div>
-              <p>{hasProfile ? 'No matching schemes found.' : 'Complete your profile for AI recommendations.'}</p>
-              {!hasProfile && <Link to="/profile" className="db-view-all-btn">Complete Profile →</Link>}
+              <p>{hasProfile ? t('dashboard.noMatchingRecs') : t('dashboard.completeProfileRecs')}</p>
+              {!hasProfile && <Link to="/profile" className="db-view-all-btn">{t('dashboard.completeProfileBtn')}</Link>}
             </div>
           )}
         </div>
@@ -231,18 +231,18 @@ export default function DashboardPage() {
         {/* Application Status */}
         <div className="db-card">
           <div className="db-card-header">
-            <div className="db-card-title">Application Status Overview</div>
-            <Link to="/applications" className="db-view-all-link">View All</Link>
+            <div className="db-card-title">{t('dashboard.appStatusOverview')}</div>
+            <Link to="/applications" className="db-view-all-link">{t('dashboard.viewAll')}</Link>
           </div>
           {applications.length > 0 ? (
             <div className="db-app-status-layout">
               <DonutChart segments={appStatuses.length > 0 ? appStatuses : [{ count: 1, pct: 100 }]} />
               <div className="db-legend">
                 {[
-                  { label: 'In Progress', color: '#6c63ff', count: inProgress },
-                  { label: 'Submitted',   color: '#fbbf24', count: Math.max(0, applications.length - inProgress - approved) },
-                  { label: 'Under Review',color: '#a78bfa', count: 0 },
-                  { label: 'Approved',    color: '#10b981', count: approved },
+                  { label: t('dashboard.inProgress'), color: '#6c63ff', count: inProgress },
+                  { label: t('dashboard.submitted'), color: '#fbbf24', count: Math.max(0, applications.length - inProgress - approved) },
+                  { label: t('dashboard.underReview'), color: '#a78bfa', count: 0 },
+                  { label: t('dashboard.approved'), color: '#10b981', count: approved },
                 ].map(({ label, color, count }) => (
                   <div key={label} className="db-legend-item">
                     <span className="db-legend-dot" style={{ background: color }}></span>
@@ -255,8 +255,8 @@ export default function DashboardPage() {
           ) : (
             <div className="db-empty-state">
               <div className="db-empty-icon">📊</div>
-              <p>No applications yet. Start applying to schemes!</p>
-              <Link to="/schemes" className="db-view-all-btn">Browse Schemes →</Link>
+              <p>{t('dashboard.noApps')}</p>
+              <Link to="/schemes" className="db-view-all-btn">{t('dashboard.browseSchemes')}</Link>
             </div>
           )}
         </div>
@@ -267,8 +267,8 @@ export default function DashboardPage() {
         {/* Recently Recommended */}
         <div className="db-card">
           <div className="db-card-header">
-            <div className="db-card-title">Recently Recommended for You</div>
-            <Link to="/recommendations" className="db-view-all-link">View All</Link>
+            <div className="db-card-title">{t('dashboard.recentRecs')}</div>
+            <Link to="/recommendations" className="db-view-all-link">{t('dashboard.viewAll')}</Link>
           </div>
           {highMatchRecs.length > 0 ? (
             <div className="db-rec-list">
@@ -279,15 +279,15 @@ export default function DashboardPage() {
                     <div className="db-rec-name">{scheme.name}</div>
                     <div className="db-rec-cat">{scheme.target_category || 'General'}</div>
                   </div>
-                  <div className="db-rec-match">{Math.round((scheme.score || 0.8) * 100)}% Match</div>
-                  <Link to={`/recommendations`} className="db-rec-btn">View Details</Link>
+                  <div className="db-rec-match">{Math.round((scheme.score || 0.8) * 100)}% {t('dashboard.matchScore')}</div>
+                  <Link to={`/recommendations`} className="db-rec-btn">{t('dashboard.viewDetails')}</Link>
                 </div>
               ))}
             </div>
           ) : (
             <div className="db-empty-state">
               <div className="db-empty-icon">📋</div>
-              <p>{hasProfile ? 'No recommendations yet.' : 'Complete your profile to get recommendations.'}</p>
+              <p>{hasProfile ? t('dashboard.noMatchingRecs') : t('dashboard.completeProfileRecs')}</p>
             </div>
           )}
         </div>
@@ -295,8 +295,8 @@ export default function DashboardPage() {
         {/* Latest Updates / Recent Applications */}
         <div className="db-card">
           <div className="db-card-header">
-            <div className="db-card-title">Latest Updates</div>
-            <Link to="/applications" className="db-view-all-link">View All</Link>
+            <div className="db-card-title">{t('dashboard.latestUpdates')}</div>
+            <Link to="/applications" className="db-view-all-link">{t('dashboard.viewAll')}</Link>
           </div>
           <div className="db-updates-list">
             {applications.length > 0 ? applications.slice(0, 3).map((app, i) => (
@@ -305,9 +305,9 @@ export default function DashboardPage() {
                   {app.status === 'Approved' ? '✅' : app.status === 'Rejected' ? '❌' : '📋'}
                 </div>
                 <div className="db-update-info">
-                  <div className="db-update-title">Application status: {app.status}</div>
+                  <div className="db-update-title">{t('dashboard.appStatus')}: {app.status}</div>
                   <div className="db-update-sub">{app.scheme?.name || 'Government Scheme'}</div>
-                  <div className="db-update-time">{i + 1} day{i !== 0 ? 's' : ''} ago</div>
+                  <div className="db-update-time">{i + 1} {i !== 0 ? t('dashboard.daysAgo') : t('dashboard.dayAgo')}</div>
                 </div>
               </div>
             )) : [
@@ -325,23 +325,8 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-          <Link to="/applications" className="db-view-all-btn" style={{ marginTop: '1rem' }}>View All Updates →</Link>
+          <Link to="/applications" className="db-view-all-btn" style={{ marginTop: '1rem' }}>{t('dashboard.viewAll')} →</Link>
         </div>
-      </div>
-
-      {/* ── Chat CTA banner ── */}
-      <div className="db-chat-banner">
-        <div className="db-chat-bot">🤖</div>
-        <div className="db-chat-text">
-          <div className="db-chat-title">Need Help Finding the Right Scheme?</div>
-          <div className="db-chat-sub">Chat with our AI assistant to get personalized recommendations</div>
-        </div>
-        <button
-          className="db-chat-btn"
-          onClick={() => window.dispatchEvent(new CustomEvent('openChatbot'))}
-        >
-          💬 Chat with AI
-        </button>
       </div>
     </div>
   );

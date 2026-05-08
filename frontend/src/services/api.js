@@ -83,7 +83,10 @@ export const schemeAPI = {
 // Application APIs
 export const applicationAPI = {
   apply: (schemeId) => api.post(`/apply/${schemeId}`),
-  getMyApplications: () => api.get('/applications'),
+  getMyApplications: (language) => {
+    const lang = language || getCurrentLanguage();
+    return api.get(`/applications?language=${lang}`);
+  },
   updateTracking: (appId, trackingId, trackingLink) =>
     api.put(`/applications/${appId}/tracking`, {
       tracking_id: trackingId,
@@ -93,7 +96,10 @@ export const applicationAPI = {
 
 // Recommendation APIs
 export const recommendationAPI = {
-  getRecommendations: () => api.get('/recommendations'),
+  getRecommendations: (language) => {
+    const lang = language || getCurrentLanguage();
+    return api.get(`/recommendations?language=${lang}`);
+  },
 };
 
 // Admin APIs

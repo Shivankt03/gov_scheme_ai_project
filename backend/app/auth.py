@@ -52,7 +52,7 @@ def get_current_user(
         if email is None:
             raise credentials_exception
         token_data = schemas.TokenData(email=email)
-    except Exception:
+    except jwt.PyJWTError:
         raise credentials_exception
 
     user = db.query(models.User).filter(models.User.email == token_data.email).first()

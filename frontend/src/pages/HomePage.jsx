@@ -226,6 +226,54 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Categories Section */}
+      <section className="py-24 px-6 relative bg-[#0A0D14]">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-3">
+              Find schemes based on
+            </h2>
+            <h2 className="text-4xl md:text-5xl font-black text-white">
+              categories
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+            {[
+              { icon: '🌿', label: 'Agriculture, Rural &\nEnvironment',         count: '835',  link: '/schemes?occupation=Farmer',      color: 'from-green-500/20 to-green-700/10',    border: 'border-green-500/30',    hover: 'hover:border-green-400/60 hover:shadow-green-500/20' },
+              { icon: '🏦', label: 'Banking, Financial\nServices and Insurance', count: '329',  link: '/schemes?q=Finance',              color: 'from-blue-500/20 to-blue-700/10',      border: 'border-blue-500/30',     hover: 'hover:border-blue-400/60 hover:shadow-blue-500/20' },
+              { icon: '🤝', label: 'Business &\nEntrepreneurship',               count: '746',  link: '/schemes?q=Business',             color: 'from-cyan-500/20 to-cyan-700/10',      border: 'border-cyan-500/30',     hover: 'hover:border-cyan-400/60 hover:shadow-cyan-500/20' },
+              { icon: '🎓', label: 'Education &\nLearning',                      count: '1084', link: '/schemes?occupation=Student',     color: 'from-red-500/20 to-red-700/10',        border: 'border-red-400/30',      hover: 'hover:border-red-400/60 hover:shadow-red-500/20' },
+              { icon: '💙', label: 'Health &\nWellness',                         count: '287',  link: '/schemes?q=Health',               color: 'from-sky-500/20 to-sky-700/10',        border: 'border-sky-500/30',      hover: 'hover:border-sky-400/60 hover:shadow-sky-500/20' },
+              { icon: '🏠', label: 'Housing &\nShelter',                         count: '133',  link: '/schemes?q=Awas',                 color: 'from-indigo-500/20 to-indigo-700/10',  border: 'border-indigo-500/30',   hover: 'hover:border-indigo-400/60 hover:shadow-indigo-500/20' },
+              { icon: '⚖️', label: 'Public Safety, Law\n& Justice',              count: '33',   link: '/schemes?q=Safety',               color: 'from-orange-500/20 to-orange-700/10',  border: 'border-orange-500/30',   hover: 'hover:border-orange-400/60 hover:shadow-orange-500/20' },
+              { icon: '🔬', label: 'Science, IT &\nCommunications',               count: '109',  link: '/schemes?q=Digital',              color: 'from-teal-500/20 to-teal-700/10',      border: 'border-teal-500/30',     hover: 'hover:border-teal-400/60 hover:shadow-teal-500/20' },
+              { icon: '📈', label: 'Skills &\nEmployment',                       count: '397',  link: '/schemes?occupation=Unemployed',  color: 'from-yellow-500/20 to-yellow-700/10',  border: 'border-yellow-500/30',   hover: 'hover:border-yellow-400/60 hover:shadow-yellow-500/20' },
+              { icon: '✊', label: 'Social Welfare &\nEmpowerment',               count: '1436', link: '/schemes?category=SC',            color: 'from-pink-500/20 to-pink-700/10',      border: 'border-pink-500/30',     hover: 'hover:border-pink-400/60 hover:shadow-pink-500/20' },
+              { icon: '🎾', label: 'Sports &\nCulture',                          count: '260',  link: '/schemes?q=Sports',               color: 'from-lime-500/20 to-lime-700/10',      border: 'border-lime-500/30',     hover: 'hover:border-lime-400/60 hover:shadow-lime-500/20' },
+              { icon: '🚌', label: 'Transport &\nInfrastructure',                 count: '99',   link: '/schemes?q=Transport',            color: 'from-amber-500/20 to-amber-700/10',    border: 'border-amber-500/30',    hover: 'hover:border-amber-400/60 hover:shadow-amber-500/20' },
+              { icon: '🌐', label: 'Travel &\nTourism',                          count: '97',   link: '/schemes?q=Tourism',              color: 'from-fuchsia-500/20 to-fuchsia-700/10',border: 'border-fuchsia-500/30',  hover: 'hover:border-fuchsia-400/60 hover:shadow-fuchsia-500/20' },
+              { icon: '🔧', label: 'Utility &\nSanitation',                      count: '58',   link: '/schemes?q=Sanitation',           color: 'from-rose-500/20 to-rose-700/10',      border: 'border-rose-500/30',     hover: 'hover:border-rose-400/60 hover:shadow-rose-500/20' },
+              { icon: '👩‍👧', label: 'Women and\nChild',                          count: '465',  link: '/schemes?category=Female',        color: 'from-violet-500/20 to-violet-700/10',  border: 'border-violet-500/30',   hover: 'hover:border-violet-400/60 hover:shadow-violet-500/20' },
+            ].map(({ icon, label, count, color, border, hover, link }) => (
+              <Link
+                to={link}
+                key={label}
+                className={`group flex flex-col items-center text-center p-5 rounded-2xl bg-gradient-to-br ${color} border ${border} ${hover} hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer`}
+              >
+                <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
+                  {icon}
+                </div>
+                <p className="text-xs font-bold text-niti-success mb-1 tracking-wide">{count} Schemes</p>
+                <p className="text-sm font-semibold text-white leading-snug whitespace-pre-line">
+                  {label}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-gradient-to-r from-[#07090F] to-[#0A0D14] text-white py-14 px-6 font-sans border-t border-white/10 mt-20">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
